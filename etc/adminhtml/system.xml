@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="payment">
+            <group id="propultech_webpayplusmall" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Webpay Plus Mall</label>
+                <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Habilitado</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>payment/propultech_webpayplusmall/active</config_path>
+                </field>
+
+                <field id="title" translate="label" type="text" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Payment Title</label>
+                    <config_path>payment/propultech_webpayplusmall/title</config_path>
+                </field>
+
+                <field id="environment" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Ambiente</label>
+                    <source_model>Transbank\Webpay\Model\Config\Environment</source_model>
+                    <config_path>payment/propultech_webpayplusmall/environment</config_path>
+                </field>
+
+                <field id="commerce_code" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Código de Comercio Mall</label>
+                    <config_path>payment/propultech_webpayplusmall/commerce_code</config_path>
+                </field>
+
+                <field id="api_key" translate="label" type="password" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>API Key</label>
+                    <config_path>payment/propultech_webpayplusmall/api_key</config_path>
+                </field>
+
+                <field id="commerce_codes" translate="label" type="textarea" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Códigos de Comercio de Tiendas</label>
+                    <config_path>payment/propultech_webpayplusmall/commerce_codes</config_path>
+                </field>
+
+                <field id="payment_successful_status" translate="label" type="select" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Estado de Pago Exitoso</label>
+                    <source_model>Transbank\Webpay\Model\Config\OrderStatus</source_model>
+                    <config_path>payment/propultech_webpayplusmall/payment_successful_status</config_path>
+                </field>
+
+                <field id="payment_error_status" translate="label" type="select" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Estado de Pago Erroneo</label>
+                    <source_model>Transbank\Webpay\Model\Config\OrderStatus</source_model>
+                    <config_path>payment/propultech_webpayplusmall/payment_error_status</config_path>
+                </field>
+
+                <field id="new_order_status" translate="label" type="select" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Estado de Nueva Orden</label>
+                    <source_model>Magento\Sales\Model\Config\Source\Order\Status\NewStatus</source_model>
+                    <config_path>payment/propultech_webpayplusmall/new_order_status</config_path>
+                </field>
+
+                <field id="sort_order" translate="label" type="text" sortOrder="120" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Posición del plugin</label>
+                    <frontend_class>validate-number</frontend_class>
+                    <config_path>payment/propultech_webpayplusmall/sort_order</config_path>
+                </field>
+
+                <field id="new_email_order" translate="label" type="select" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Comportamiento del Email</label>
+                    <source_model>Transbank\Webpay\Model\Config\ConfigEmail</source_model>
+                    <config_path>payment/propultech_webpayplusmall/new_email_order</config_path>
+                </field>
+
+                <field id="invoice_settings" translate="label" type="select" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Generar Invoice</label>
+                    <source_model>Transbank\Webpay\Model\Config\ConfigInvoice</source_model>
+                    <config_path>payment/propultech_webpayplusmall/invoice_settings</config_path>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

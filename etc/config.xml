@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <propultech_webpayplusmall>
+                <active>0</active>
+                <model>Propultech\WebpayPlusMallRest\Model\WebpayPlusMall</model>
+                <title>Webpay Plus Mall</title>
+                <environment>TEST</environment>
+                <commerce_code>597055555540</commerce_code>
+                <api_key>579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C</api_key>
+                <payment_successful_status>processing</payment_successful_status>
+                <payment_error_status>canceled</payment_error_status>
+                <new_order_status>pending</new_order_status>
+                <sort_order>1</sort_order>
+                <new_email_order>after_payment</new_email_order>
+                <invoice_settings>automatic</invoice_settings>
+                <commerce_codes>[]</commerce_codes>
+            </propultech_webpayplusmall>
+        </payment>
+    </default>
+</config>
