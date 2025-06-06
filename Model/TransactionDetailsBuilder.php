@@ -31,6 +31,7 @@ class TransactionDetailsBuilder
         $items = $order->getAllItems();
         $commerceCodeGroups = [];
         $defaultCommerceCode = $this->getDefaultChildCommerceCode();
+        $itemsTotalAmount = 0;
 
         // Group items by commerce code
         foreach ($items as $item) {
@@ -46,25 +47,53 @@ class TransactionDetailsBuilder
                     $commerceCodeGroups[$commerceCode] = 0;
                 }
 
-                $commerceCodeGroups[$commerceCode] += $item->getRowTotalInclTax();
+                $itemAmount = $item->getRowTotalInclTax();
+                $commerceCodeGroups[$commerceCode] += $itemAmount;
+                $itemsTotalAmount += $itemAmount;
             } catch (\Exception $e) {
                 // Log error and continue with next item
                 continue;
             }
         }
 
+        // Calculate global discount or charge
+        $grandTotal = $order->getGrandTotal();
+        $globalAdjustment = $grandTotal - $itemsTotalAmount;
+
         // Build transaction details array
         $details = [];
         $i = 0;
+        $adjustmentApplied = 0;
+        $totalCommerceGroups = count($commerceCodeGroups);
+        $currentGroup = 0;
+
         foreach ($commerceCodeGroups as $commerceCode => $amount) {
             if (empty($commerceCode)) {
                 continue; // Skip empty commerce codes
             }
 
+            $currentGroup++;
+
+            // Calculate proportional adjustment for this commerce code
+            $adjustmentForGroup = 0;
+            if ($itemsTotalAmount > 0 && $globalAdjustment != 0) {
+                if ($currentGroup == $totalCommerceGroups) {
+                    // Last group gets the remainder to avoid rounding issues
+                    $adjustmentForGroup = $globalAdjustment - $adjustmentApplied;
+                } else {
+                    // Distribute proportionally based on amount
+                    $adjustmentForGroup = round(($amount / $itemsTotalAmount) * $globalAdjustment, 2);
+                    $adjustmentApplied += $adjustmentForGroup;
+                }
+            }
+
+            // Apply the adjustment to the amount
+            $adjustedAmount = $amount + $adjustmentForGroup;
+
             $details[] = [
                 "commerce_code" => $commerceCode,
                 "buy_order" => $buyOrderPrefix . $order->getId() . '_' . $i,
-                "amount" => (int)round($amount),
+                "amount" => (int)round($adjustedAmount),
                 "installments_number" => 1
             ];
             $i++;

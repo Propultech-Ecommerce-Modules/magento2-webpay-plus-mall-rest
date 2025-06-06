@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7] - 2025-06-06
+### Added
+- Added support for distributing global discounts and charges proportionally among commerce code groups
+- Added test script for verifying global adjustments distribution
+
 ## [0.0.0] - 2025-06-06
 ### Added
 - Initial release of Webpay Plus Mall integration for Magento 2

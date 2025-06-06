@@ -39,9 +39,9 @@ class AddWebpayMallCommerceCodeAttribute implements DataPatchInterface
                 'backend' => '',
                 'frontend' => '',
                 'label' => 'Webpay Mall Commerce Code',
-                'input' => 'text',
+                'input' => 'select',
                 'class' => '',
-                'source' => '',
+                'source' => 'Propultech\WebpayPlusMallRest\Model\Config\Source\CommerceCode',
                 'global' => ScopedAttributeInterface::SCOPE_GLOBAL,
                 'visible' => true,
                 'required' => false,
@@ -55,7 +55,7 @@ class AddWebpayMallCommerceCodeAttribute implements DataPatchInterface
                 'unique' => false,
                 'apply_to' => '',
                 'group' => 'General',
-                'note' => 'Commerce code to use for this product in Webpay Plus Mall transactions'
+                'note' => 'Select the commerce code to use for this product in Webpay Plus Mall transactions',
             ]
         );
 
