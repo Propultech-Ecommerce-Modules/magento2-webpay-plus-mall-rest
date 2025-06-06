@@ -31,9 +31,12 @@
                     <config_path>payment/propultech_webpayplusmall/api_key</config_path>
                 </field>
 
-                <field id="commerce_codes" translate="label" type="textarea" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="0">
+                <field id="commerce_codes" translate="label" type="array" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="0">
                     <label>Códigos de Comercio de Tiendas</label>
+                    <frontend_model>Propultech\WebpayPlusMallRest\Block\Adminhtml\Form\Field\CommerceCodesRow</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
                     <config_path>payment/propultech_webpayplusmall/commerce_codes</config_path>
+                    <comment>Add commerce names and their corresponding commerce codes.</comment>
                 </field>
 
                 <field id="payment_successful_status" translate="label" type="select" sortOrder="90" showInDefault="1" showInWebsite="1" showInStore="0">
