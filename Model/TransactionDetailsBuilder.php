@@ -10,25 +10,13 @@ use Magento\Store\Model\ScopeInterface;
 class TransactionDetailsBuilder
 {
     /**
-     * @var ProductRepositoryInterface
-     */
-    private ProductRepositoryInterface $productRepository;
-
-    /**
-     * @var ScopeConfigInterface
-     */
-    private ScopeConfigInterface $scopeConfig;
-
-    /**
      * @param ProductRepositoryInterface $productRepository
      * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
-        ProductRepositoryInterface $productRepository,
-        ScopeConfigInterface $scopeConfig
+        private ProductRepositoryInterface $productRepository,
+        private ScopeConfigInterface $scopeConfig
     ) {
-        $this->productRepository = $productRepository;
-        $this->scopeConfig = $scopeConfig;
     }
 
     /**

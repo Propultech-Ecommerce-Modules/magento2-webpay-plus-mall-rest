@@ -29,56 +29,6 @@ use Transbank\Webpay\WebpayPlus\Responses\MallTransactionCommitResponse;
 class Commit extends Action
 {
     /**
-     * @var CheckoutSession
-     */
-    private CheckoutSession $checkoutSession;
-
-    /**
-     * @var PageFactory
-     */
-    private PageFactory $resultPageFactory;
-
-    /**
-     * @var ConfigProvider
-     */
-    private ConfigProvider $configProvider;
-
-    /**
-     * @var OrderSender
-     */
-    private OrderSender $orderSender;
-
-    /**
-     * @var InvoiceSender
-     */
-    private InvoiceSender $invoiceSender;
-
-    /**
-     * @var InvoiceService
-     */
-    private InvoiceService $invoiceService;
-
-    /**
-     * @var DbTransaction
-     */
-    private DbTransaction $dbTransaction;
-
-    /**
-     * @var PluginLogger
-     */
-    private PluginLogger $log;
-
-    /**
-     * @var TransbankSdkWebpayPlusMallRestFactory
-     */
-    private TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory;
-
-    /**
-     * @var OrderRepositoryInterface
-     */
-    private OrderRepositoryInterface $orderRepository;
-
-    /**
      * @param Context $context
      * @param CheckoutSession $checkoutSession
      * @param PageFactory $resultPageFactory
@@ -87,34 +37,24 @@ class Commit extends Action
      * @param InvoiceSender $invoiceSender
      * @param InvoiceService $invoiceService
      * @param DbTransaction $dbTransaction
-     * @param PluginLogger $logger
+     * @param PluginLogger $log
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      * @param OrderRepositoryInterface $orderRepository
      */
     public function __construct(
         Context $context,
-        CheckoutSession $checkoutSession,
-        PageFactory $resultPageFactory,
-        ConfigProvider $configProvider,
-        OrderSender $orderSender,
-        InvoiceSender $invoiceSender,
-        InvoiceService $invoiceService,
-        DbTransaction $dbTransaction,
-        PluginLogger $logger,
-        TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
-        OrderRepositoryInterface $orderRepository
+        private CheckoutSession $checkoutSession,
+        private PageFactory $resultPageFactory,
+        private ConfigProvider $configProvider,
+        private OrderSender $orderSender,
+        private InvoiceSender $invoiceSender,
+        private InvoiceService $invoiceService,
+        private DbTransaction $dbTransaction,
+        private PluginLogger $log,
+        private TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
+        private OrderRepositoryInterface $orderRepository
     ) {
         parent::__construct($context);
-        $this->checkoutSession = $checkoutSession;
-        $this->resultPageFactory = $resultPageFactory;
-        $this->configProvider = $configProvider;
-        $this->orderSender = $orderSender;
-        $this->invoiceSender = $invoiceSender;
-        $this->invoiceService = $invoiceService;
-        $this->dbTransaction = $dbTransaction;
-        $this->log = $logger;
-        $this->transbankSdkFactory = $transbankSdkFactory;
-        $this->orderRepository = $orderRepository;
     }
 
     /**

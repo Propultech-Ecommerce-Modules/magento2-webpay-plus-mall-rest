@@ -25,46 +25,6 @@ use Transbank\Webpay\Helper\PluginLogger;
 class Create extends Action
 {
     /**
-     * @var CheckoutSession
-     */
-    private CheckoutSession $checkoutSession;
-
-    /**
-     * @var JsonFactory
-     */
-    private JsonFactory $resultJsonFactory;
-
-    /**
-     * @var QuoteManagement
-     */
-    private QuoteManagement $quoteManagement;
-
-    /**
-     * @var StoreManagerInterface
-     */
-    private StoreManagerInterface $storeManager;
-
-    /**
-     * @var ConfigProvider
-     */
-    private ConfigProvider $configProvider;
-
-    /**
-     * @var TransactionDetailsBuilder
-     */
-    private TransactionDetailsBuilder $transactionDetailsBuilder;
-
-    /**
-     * @var PluginLogger
-     */
-    private PluginLogger $log;
-
-    /**
-     * @var TransbankSdkWebpayPlusMallRestFactory
-     */
-    private TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory;
-
-    /**
      * @param Context $context
      * @param CheckoutSession $checkoutSession
      * @param JsonFactory $resultJsonFactory
@@ -72,29 +32,21 @@ class Create extends Action
      * @param StoreManagerInterface $storeManager
      * @param ConfigProvider $configProvider
      * @param TransactionDetailsBuilder $transactionDetailsBuilder
-     * @param PluginLogger $logger
+     * @param PluginLogger $log
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      */
     public function __construct(
         Context $context,
-        CheckoutSession $checkoutSession,
-        JsonFactory $resultJsonFactory,
-        QuoteManagement $quoteManagement,
-        StoreManagerInterface $storeManager,
-        ConfigProvider $configProvider,
-        TransactionDetailsBuilder $transactionDetailsBuilder,
-        PluginLogger $logger,
-        TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
+        private CheckoutSession $checkoutSession,
+        private JsonFactory $resultJsonFactory,
+        private QuoteManagement $quoteManagement,
+        private StoreManagerInterface $storeManager,
+        private ConfigProvider $configProvider,
+        private TransactionDetailsBuilder $transactionDetailsBuilder,
+        private PluginLogger $log,
+        private TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
     ) {
         parent::__construct($context);
-        $this->checkoutSession = $checkoutSession;
-        $this->resultJsonFactory = $resultJsonFactory;
-        $this->quoteManagement = $quoteManagement;
-        $this->storeManager = $storeManager;
-        $this->configProvider = $configProvider;
-        $this->transactionDetailsBuilder = $transactionDetailsBuilder;
-        $this->log = $logger;
-        $this->transbankSdkFactory = $transbankSdkFactory;
     }
 
     /**

@@ -19,11 +19,6 @@ use Transbank\Webpay\WebpayPlus\Responses\MallTransactionRefundResponse;
 class TransbankSdkWebpayPlusMallRest
 {
     /**
-     * @var PluginLogger
-     */
-    private PluginLogger $log;
-
-    /**
      * @var MallTransaction
      */
     private MallTransaction $mallTransaction;
@@ -31,14 +26,12 @@ class TransbankSdkWebpayPlusMallRest
     /**
      * TransbankSdkWebpayPlusMallRest constructor.
      *
-     * @param PluginLogger $logger
      * @param array $config
      */
     public function __construct(
-        PluginLogger $logger,
+        private PluginLogger $log,
         array $config
     ) {
-        $this->log = $logger;
         $this->mallTransaction = new MallTransaction();
 
         $environment = $config['ENVIRONMENT'] ?? 'TEST';

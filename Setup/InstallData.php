@@ -12,18 +12,13 @@ use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
 class InstallData implements InstallDataInterface
 {
     /**
-     * @var EavSetupFactory
-     */
-    private $eavSetupFactory;
-
-    /**
      * Constructor
      *
      * @param EavSetupFactory $eavSetupFactory
      */
-    public function __construct(EavSetupFactory $eavSetupFactory)
-    {
-        $this->eavSetupFactory = $eavSetupFactory;
+    public function __construct(
+        private EavSetupFactory $eavSetupFactory
+    ) {
     }
 
     /**

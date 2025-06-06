@@ -10,25 +10,13 @@ use Magento\Store\Model\ScopeInterface;
 class ConfigProvider implements ConfigProviderInterface
 {
     /**
-     * @var ScopeConfigInterface
-     */
-    protected $scopeConfig;
-
-    /**
-     * @var UrlInterface
-     */
-    protected $urlBuilder;
-
-    /**
      * @param ScopeConfigInterface $scopeConfig
      * @param UrlInterface $urlBuilder
      */
     public function __construct(
-        ScopeConfigInterface $scopeConfig,
-        UrlInterface $urlBuilder
+        protected ScopeConfigInterface $scopeConfig,
+        protected UrlInterface $urlBuilder
     ) {
-        $this->scopeConfig = $scopeConfig;
-        $this->urlBuilder = $urlBuilder;
     }
 
     /**
