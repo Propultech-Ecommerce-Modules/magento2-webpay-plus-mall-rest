@@ -1,36 +1,38 @@
 <?php
 
-namespace Propultech\WebpayPlusMallRest\Setup;
+namespace Propultech\WebpayPlusMallRest\Setup\Patch\Data;
 
 use Magento\Eav\Setup\EavSetup;
 use Magento\Eav\Setup\EavSetupFactory;
-use Magento\Framework\Setup\InstallDataInterface;
-use Magento\Framework\Setup\ModuleContextInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
+use Magento\Framework\Setup\Patch\DataPatchInterface;
 use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
+use Magento\Catalog\Model\Product;
 
-class InstallData implements InstallDataInterface
+class AddWebpayMallCommerceCodeAttribute implements DataPatchInterface
 {
     /**
-     * Constructor
-     *
+     * @param ModuleDataSetupInterface $moduleDataSetup
      * @param EavSetupFactory $eavSetupFactory
      */
     public function __construct(
-        private EavSetupFactory $eavSetupFactory
+        private readonly ModuleDataSetupInterface $moduleDataSetup,
+        private readonly EavSetupFactory $eavSetupFactory
     ) {
     }
 
     /**
      * {@inheritdoc}
      */
-    public function install(ModuleDataSetupInterface $setup, ModuleContextInterface $context)
+    public function apply()
     {
+        $this->moduleDataSetup->startSetup();
+
         /** @var EavSetup $eavSetup */
-        $eavSetup = $this->eavSetupFactory->create(['setup' => $setup]);
+        $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
 
         $eavSetup->addAttribute(
-            \Magento\Catalog\Model\Product::ENTITY,
+            Product::ENTITY,
             'webpay_mall_commerce_code',
             [
                 'type' => 'varchar',
@@ -56,5 +58,25 @@ class InstallData implements InstallDataInterface
                 'note' => 'Commerce code to use for this product in Webpay Plus Mall transactions'
             ]
         );
+
+        $this->moduleDataSetup->endSetup();
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAliases()
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function getDependencies()
+    {
+        return [];
     }
 }
