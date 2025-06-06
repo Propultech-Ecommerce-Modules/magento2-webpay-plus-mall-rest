@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2023-01-15
+## [0.0.0] - 2025-06-06
 ### Added
 - Initial release of Webpay Plus Mall integration for Magento 2
 - Support for multiple commerce codes
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Customizable order status handling
 - Documentation in README.md
 
-## [1.0.1] - 2023-02-20
+## [0.0.1] - 2025-06-06
 ### Changed
 - Updated PHP version requirement to `^7.4.0 || ^8.1.0` for compatibility with PHP 8.1
 - Updated Magento framework requirement to `^103.0.0` for compatibility with Magento 2.4.6+
@@ -52,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Created IMPROVEMENTS.md file documenting all improvements
 
-## [1.1.0] - 2023-03-25
+## [0.0.2] - 2025-06-06
 ### Changed
 - Converted product attribute 'webpay_mall_commerce_code' from text field to dropdown
 - Updated attribute to use CommerceCode source model for populating dropdown options
@@ -63,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added documentation for commerce codes feature in COMMERCE_CODES.md
 - Added test script for verifying commerce codes configuration
 
-## [1.2.0] - 2023-04-30
+## [0.0.3] - 2025-06-06
 ### Changed
 - Refactored constructors to use promoted properties (PHP 8.1 feature)
 - Converted all applicable classes to use promoted properties constructors
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added documentation for promoted properties in PROMOTED_PROPERTIES.md
 - Added test script for verifying promoted properties functionality
 
-## [1.3.0] - 2023-05-15
+## [0.0.4] - 2025-06-06
 ### Changed
 - Migrated from InstallData and UpgradeData scripts to Data Patches
 - Removed InstallData.php and UpgradeData.php
@@ -83,6 +83,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added documentation for data patches migration in DATA_PATCHES.md
 - Added test script for verifying data patches functionality
 
-## [1.3.1] - 2023-06-01
+## [0.0.5] - 2025-06-06
 ### Added
 - Added CHANGELOG.md file to track all changes to the project
+
+## [0.0.6] - 2025-06-06
+### Added
+- Replace payment title with Webpay Plus logo in the frontend template for improved branding.
+- Add custom CSS to adjust logo size and styling for better visual integration.
+- Introduce SVG logo asset for higher fidelity and scalability.
+
+
+## [Released]
