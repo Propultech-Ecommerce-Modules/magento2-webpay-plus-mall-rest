@@ -38,10 +38,6 @@ class TransactionDetailsBuilder
                 $product = $this->productRepository->getById($item->getProductId());
                 $commerceCode = $product->getData('webpay_mall_commerce_code');
 
-                if (empty($commerceCode)) {
-                    $commerceCode = $defaultCommerceCode;
-                }
-
                 if (!isset($commerceCodeGroups[$commerceCode])) {
                     $commerceCodeGroups[$commerceCode] = 0;
                 }
