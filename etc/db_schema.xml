@@ -6,7 +6,7 @@
         <column xsi:type="varchar" name="order_id" length="60" nullable="false" comment="Order Id"/>
         <column xsi:type="varchar" name="buy_order" length="20" nullable="false" comment="Buy order"/>
         <column xsi:type="varchar" name="child_buy_order" length="20" nullable="false" comment="Child buy order"/>
-        <column xsi:type="text" name="commerce_codes" length="60" nullable="false" comment="Commerce codes (JSON)"/>
+        <column xsi:type="text" name="commerce_codes" nullable="false" comment="Commerce codes (JSON)"/>
         <column xsi:type="varchar" name="child_commerce_code" length="60" nullable="false" comment="Child commerce code"/>
         <column xsi:type="bigint" name="amount" nullable="false" comment="Amount"/>
         <column xsi:type="varchar" name="token" length="100" nullable="false" comment="Token"/>
@@ -24,7 +24,7 @@
             <column name="id"/>
         </constraint>
 
-        <index referenceId="TRANSBANK_WEBPAY_ORDER_DATA_TOKEN" indexType="btree">
+        <index referenceId="PROPULTECH_WEBPAY_MALL_ORDER_DATA_TOKEN" indexType="btree">
             <column name="token"/>
         </index>
     </table>
