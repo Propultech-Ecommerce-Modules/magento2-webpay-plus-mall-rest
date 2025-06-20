@@ -3,4 +3,13 @@
     <!-- API Interfaces -->
     <preference for="Propultech\WebpayPlusMallRest\Api\Data\WebpayMallOrderDataInterface" type="Propultech\WebpayPlusMallRest\Model\WebpayMallOrderData" />
     <preference for="Propultech\WebpayPlusMallRest\Api\WebpayMallOrderDataRepositoryInterface" type="Propultech\WebpayPlusMallRest\Model\WebpayMallOrderDataRepository" />
+
+    <!-- CLI Commands -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="propultech_webpayplusmall_show_credentials" xsi:type="object">Propultech\WebpayPlusMallRest\Console\Command\ShowCredentialsCommand</item>
+            </argument>
+        </arguments>
+    </type>
 </config>
