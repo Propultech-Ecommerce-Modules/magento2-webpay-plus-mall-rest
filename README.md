@@ -77,14 +77,6 @@ This module provides integration with Transbank's Webpay Plus Mall payment gatew
 
 The module includes a transaction details builder that groups products by their associated commerce code and builds the transaction details array for Webpay Plus Mall. This allows for flexible handling of multiple commerce codes in a single transaction.
 
-### Global Discounts and Charges
-
-The transaction details builder automatically handles global discounts and charges applied to the order. These global adjustments (such as cart-level discounts, shipping costs, or other fees) are distributed proportionally among the different commerce code groups based on their relative amounts. This ensures that:
-
-1. Each commerce code group receives its fair share of any global discount or charge
-2. The sum of all amounts in the transaction details exactly matches the order's grand total
-3. Rounding issues are avoided by applying any remaining adjustment to the last commerce code group
-
 ## Support
 
 For support, please contact the module developer or refer to the Transbank documentation:
