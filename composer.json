@@ -2,7 +2,7 @@
     "name": "propultech/magento2-webpay-plus-mall-rest",
     "description": "Webpay Plus Mall integration for Magento 2",
     "type": "magento2-module",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": [
         "OSL-3.0",
         "AFL-3.0"
