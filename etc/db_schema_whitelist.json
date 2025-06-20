@@ -1,0 +1,29 @@
+{
+    "webpay_mall_order_data": {
+        "column": {
+            "id": true,
+            "order_id": true,
+            "buy_order": true,
+            "child_buy_order": true,
+            "commerce_codes": true,
+            "child_commerce_code": true,
+            "amount": true,
+            "token": true,
+            "transbank_status": true,
+            "session_id": true,
+            "quote_id": true,
+            "payment_status": true,
+            "metadata": true,
+            "created_at": true,
+            "updated_at": true,
+            "product": true,
+            "environment": true
+        },
+        "index": {
+            "WEBPAY_MALL_ORDER_DATA_TOKEN": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}
