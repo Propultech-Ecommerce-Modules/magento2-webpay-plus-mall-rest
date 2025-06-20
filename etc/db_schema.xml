@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="webpay_mall_order_data" resource="default" engine="innodb" comment="Webpay Order Data">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="ID"/>
+        <column xsi:type="varchar" name="order_id" length="60" nullable="false" comment="Order Id"/>
+        <column xsi:type="varchar" name="buy_order" length="20" nullable="false" comment="Buy order"/>
+        <column xsi:type="varchar" name="child_buy_order" length="20" nullable="false" comment="Child buy order"/>
+        <column xsi:type="text" name="commerce_codes" length="60" nullable="false" comment="Commerce codes (JSON)"/>
+        <column xsi:type="varchar" name="child_commerce_code" length="60" nullable="false" comment="Child commerce code"/>
+        <column xsi:type="bigint" name="amount" nullable="false" comment="Amount"/>
+        <column xsi:type="varchar" name="token" length="100" nullable="false" comment="Token"/>
+        <column xsi:type="text" name="transbank_status" nullable="false" comment="Transbank status"/>
+        <column xsi:type="varchar" name="session_id" length="20" nullable="false" comment="Session ID"/>
+        <column xsi:type="varchar" name="quote_id" length="20" nullable="false" comment="Quote ID"/>
+        <column xsi:type="varchar" name="payment_status" length="30" nullable="false" comment="Payment Status"/>
+        <column xsi:type="text" name="metadata" nullable="false" comment="Metadata"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <column xsi:type="varchar" name="product" length="50" nullable="false" comment="Product"/>
+        <column xsi:type="varchar" name="environment" length="50" nullable="false" comment="Environment"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+
+        <index referenceId="TRANSBANK_WEBPAY_ORDER_DATA_TOKEN" indexType="btree">
+            <column name="token"/>
+        </index>
+    </table>
+</schema>
