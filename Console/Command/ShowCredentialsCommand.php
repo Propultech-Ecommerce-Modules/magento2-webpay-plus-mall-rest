@@ -6,23 +6,21 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
-
+use  Transbank\Webpay\Model\Config\ConfigProvider as TbkConfigProvider;
 class ShowCredentialsCommand extends Command
 {
-    /**
-     * @var ConfigProvider
-     */
-    protected $configProvider;
 
     /**
      * @param ConfigProvider $configProvider
+     * @param TbkConfigProvider $tbkConfigProvider
      * @param string|null $name
      */
     public function __construct(
-        ConfigProvider $configProvider,
+        private readonly ConfigProvider $configProvider,
+        private readonly TbkConfigProvider $tbkConfigProvider,
         string $name = null
     ) {
-        $this->configProvider = $configProvider;
+
         parent::__construct($name);
     }
 
@@ -51,7 +49,15 @@ class ShowCredentialsCommand extends Command
 
         // Get credentials from config provider
         $config = $this->configProvider->getPluginConfig();
+        $tbkConfig = $this->tbkConfigProvider->getPluginConfig();
         $commerceCodes = $this->configProvider->getCommerceCodes();
+
+        // Display transbank credentials
+        $output->writeln('<comment>TBK Configuration:</comment>');
+        $output->writeln('Environment: ' . $tbkConfig['ENVIRONMENT']);
+        $output->writeln('Commerce Code: ' . $tbkConfig['COMMERCE_CODE']);
+        $output->writeln('API Key: ' . $tbkConfig['API_KEY']);
+        $output->writeln('');
 
         // Display main credentials
         $output->writeln('<comment>Main Configuration:</comment>');
