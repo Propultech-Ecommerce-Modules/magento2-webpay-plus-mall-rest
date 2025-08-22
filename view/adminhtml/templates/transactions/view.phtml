@@ -1,0 +1,40 @@
+<?php
+/** @var \Propultech\WebpayPlusMallRest\Block\Adminhtml\Transactions\View $block */
+$transaction = $block->getTransaction();
+?>
+<div class="page-main-actions">
+    <div class="page-actions _hidden">
+        <a class="action-default" href="<?= $block->getUrl('propultech_webpayplusmall/transactions/index'); ?>">&laquo; <?= __('Back to Transactions'); ?></a>
+    </div>
+</div>
+
+<div class="admin__table-wrapper">
+    <table class="admin__table-primary">
+        <tbody>
+        <?php foreach ($transaction as $key => $value): ?>
+            <tr>
+                <th><?= $block->escapeHtml(ucwords(str_replace('_', ' ', $key))); ?></th>
+                <td>
+                    <?php if (is_array($value) || is_object($value)): ?>
+                        <pre><?= $block->escapeHtml(json_encode($value, JSON_PRETTY_PRINT)); ?></pre>
+                    <?php else: ?>
+                        <?php
+                        $string = (string)$value;
+                        if ($key === 'commerce_codes' || $key === 'transbank_status' || $key === 'metadata') {
+                            $decoded = json_decode($string, true);
+                            if (json_last_error() === JSON_ERROR_NONE) {
+                                echo '<pre>' . $block->escapeHtml(json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . '</pre>';
+                            } else {
+                                echo $block->escapeHtml($string);
+                            }
+                        } else {
+                            echo $block->escapeHtml($string);
+                        }
+                        ?>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>

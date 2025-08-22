@@ -1,144 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Propultech\WebpayPlusMallRest\Model;
 
-use Propultech\WebpayPlusMallRest\Api\WebpayMallOrderDataRepositoryInterface;
-use Propultech\WebpayPlusMallRest\Api\Data\WebpayMallOrderDataInterface;
-use Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData as WebpayMallOrderDataResource;
-use Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData\CollectionFactory;
-use Magento\Framework\Exception\CouldNotSaveException;
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Exception\CouldNotDeleteException;
 
-/**
- * Class WebpayMallOrderDataRepository
- * Repository for WebpayMallOrderData model
- */
-class WebpayMallOrderDataRepository implements WebpayMallOrderDataRepositoryInterface
+class WebpayMallOrderDataRepository
 {
-    /**
-     * @var WebpayMallOrderDataResource
-     */
-    protected $resource;
-
-    /**
-     * @var WebpayMallOrderDataFactory
-     */
-    protected $webpayMallOrderDataFactory;
-
-    /**
-     * @var CollectionFactory
-     */
-    protected $collectionFactory;
-
-    /**
-     * Constructor
-     *
-     * @param WebpayMallOrderDataResource $resource
-     * @param WebpayMallOrderDataFactory $webpayMallOrderDataFactory
-     * @param CollectionFactory $collectionFactory
-     */
-    public function __construct(
-        WebpayMallOrderDataResource $resource,
-        WebpayMallOrderDataFactory $webpayMallOrderDataFactory,
-        CollectionFactory $collectionFactory
-    ) {
-        $this->resource = $resource;
-        $this->webpayMallOrderDataFactory = $webpayMallOrderDataFactory;
-        $this->collectionFactory = $collectionFactory;
+    public function __construct(private ResourceConnection $resource)
+    {
     }
 
-    /**
-     * Save WebpayMallOrderData
-     *
-     * @param WebpayMallOrderDataInterface $webpayMallOrderData
-     * @return WebpayMallOrderDataInterface
-     * @throws CouldNotSaveException
-     */
-    public function save(WebpayMallOrderDataInterface $webpayMallOrderData)
+    public function getById(int $id): array
     {
-        try {
-            $this->resource->save($webpayMallOrderData);
-        } catch (\Exception $exception) {
-            throw new CouldNotSaveException(__($exception->getMessage()));
+        $connection = $this->resource->getConnection();
+        $table = $this->resource->getTableName('webpay_mall_order_data');
+        $select = $connection->select()->from($table)->where('id = ?', $id)->limit(1);
+        $row = $connection->fetchRow($select) ?: [];
+        if (!$row) {
+            throw new NoSuchEntityException(__('Transaction with id %1 not found', $id));
         }
-        return $webpayMallOrderData;
-    }
-
-    /**
-     * Get WebpayMallOrderData by ID
-     *
-     * @param int $id
-     * @return WebpayMallOrderDataInterface
-     * @throws NoSuchEntityException
-     */
-    public function getById($id)
-    {
-        $webpayMallOrderData = $this->webpayMallOrderDataFactory->create();
-        $this->resource->load($webpayMallOrderData, $id);
-        if (!$webpayMallOrderData->getId()) {
-            throw new NoSuchEntityException(__('WebpayMallOrderData with id "%1" does not exist.', $id));
-        }
-        return $webpayMallOrderData;
-    }
-
-    /**
-     * Get WebpayMallOrderData by Order ID and Quote ID
-     *
-     * @param string $orderId
-     * @param string $quoteId
-     * @return WebpayMallOrderDataInterface
-     */
-    public function getByOrderIdAndQuoteId($orderId, $quoteId)
-    {
-        $collection = $this->collectionFactory->create();
-        $collection->addFieldToFilter('order_id', $orderId)
-            ->addFieldToFilter('quote_id', $quoteId);
-
-        return $collection->getFirstItem();
-    }
-
-    /**
-     * Get WebpayMallOrderData by Token
-     *
-     * @param string $token
-     * @return WebpayMallOrderDataInterface
-     */
-    public function getByToken($token)
-    {
-        $collection = $this->collectionFactory->create();
-        $collection->addFieldToFilter('token', $token);
-
-        return $collection->getFirstItem();
-    }
-
-    /**
-     * Delete WebpayMallOrderData
-     *
-     * @param WebpayMallOrderDataInterface $webpayMallOrderData
-     * @return bool
-     * @throws CouldNotDeleteException
-     */
-    public function delete(WebpayMallOrderDataInterface $webpayMallOrderData)
-    {
-        try {
-            $this->resource->delete($webpayMallOrderData);
-        } catch (\Exception $exception) {
-            throw new CouldNotDeleteException(__($exception->getMessage()));
-        }
-        return true;
-    }
-
-    /**
-     * Delete WebpayMallOrderData by ID
-     *
-     * @param int $id
-     * @return bool
-     * @throws NoSuchEntityException
-     * @throws CouldNotDeleteException
-     */
-    public function deleteById($id)
-    {
-        return $this->delete($this->getById($id));
+        return $row;
     }
 }
