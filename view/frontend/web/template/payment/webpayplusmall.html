@@ -5,7 +5,6 @@
                class="radio"
                data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()"/>
         <label data-bind="attr: {'for': getCode()}" class="label">
-            <span data-bind="text: getTitle()"></span>
             <img data-bind="attr: {src: getLogoUrl(), alt: getTitle()}" class="payment-icon" style="height: 24px; vertical-align: middle; margin-left: 10px;"/>
         </label>
     </div>
