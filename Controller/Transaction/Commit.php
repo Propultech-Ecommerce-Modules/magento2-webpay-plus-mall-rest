@@ -91,7 +91,7 @@ class Commit extends Action
                 $allApproved = $this->areAllDetailsApproved($commitResponse);
 
                 if ($allApproved) {
-                    $this->processSuccessfulPayment($order, $commitResponse);
+                    $this->processSuccessfulPayment($order, $commitResponse, $tokenWs);
                     return $this->_redirect('checkout/onepage/success');
                 } else {
                     $this->processFailedPayment($order, $commitResponse);
@@ -148,17 +148,56 @@ class Commit extends Action
      * @param MallTransactionCommitResponse $commitResponse
      * @return void
      */
-    private function processSuccessfulPayment(Order $order, MallTransactionCommitResponse $commitResponse): void
+    private function processSuccessfulPayment(Order $order, MallTransactionCommitResponse $commitResponse, string $tokenWs): void
     {
         $orderStatusSuccess = $this->configProvider->getOrderSuccessStatus();
         $message = "<h3>Pago exitoso con Webpay Plus Mall</h3><br>" . json_encode($commitResponse);
 
         // Set payment information
         $payment = $order->getPayment();
-        $payment->setLastTransId($commitResponse->details[0]->authorizationCode);
-        $payment->setTransactionId($commitResponse->details[0]->authorizationCode);
-        $payment->setAdditionalInformation([Transaction::RAW_DETAILS => (array) $commitResponse]);
+        $firstDetail = isset($commitResponse->details[0]) ? $commitResponse->details[0] : null;
+        if ($firstDetail && isset($firstDetail->authorizationCode)) {
+            $payment->setLastTransId($firstDetail->authorizationCode);
+            $payment->setTransactionId($firstDetail->authorizationCode);
+        }
         $payment->setMethod(WebpayPlusMall::CODE);
+
+        // Build additional information (non-sensitive)
+        $cardNumber = $commitResponse->cardNumber ?? null;
+        $last4 = $cardNumber ? substr(preg_replace('/\D/', '', (string)$cardNumber), -4) : null;
+
+        $details = [];
+        if (!empty($commitResponse->details) && is_array($commitResponse->details)) {
+            foreach ($commitResponse->details as $d) {
+                $details[] = [
+                    'commerce_code' => $d->commerceCode ?? null,
+                    'child_buy_order' => $d->buyOrder ?? null,
+                    'amount' => $d->amount ?? null,
+                    'authorization_code' => $d->authorizationCode ?? null,
+                    'payment_type_code' => $d->paymentTypeCode ?? null,
+                    'response_code' => $d->responseCode ?? null,
+                    'installments_number' => $d->installmentsNumber ?? null,
+                    'status' => $d->status ?? null,
+                ];
+            }
+        }
+
+        $additional = [
+            'token_ws' => $tokenWs,
+            'buy_order' => $commitResponse->buyOrder ?? $order->getIncrementId(),
+            'session_id' => $commitResponse->sessionId ?? null,
+            'transaction_date' => $commitResponse->transactionDate ?? null,
+            'accounting_date' => $commitResponse->accountingDate ?? null,
+            'vci' => $commitResponse->vci ?? null,
+            'card' => [
+                'last4' => $last4,
+            ],
+            'details' => $details,
+        ];
+
+        // Persist additional information keys individually to avoid overwriting
+        $payment->setAdditionalInformation('webpayplusmall', $additional);
+        $payment->setAdditionalInformation(Transaction::RAW_DETAILS, json_encode($commitResponse));
 
         // Set order status
         $order->setState(\Magento\Sales\Model\Order::STATE_PROCESSING);
