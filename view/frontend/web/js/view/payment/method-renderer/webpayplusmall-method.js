@@ -37,7 +37,7 @@ define(
              * @returns {String}
              */
             getLogoUrl: function () {
-                return require.toUrl('Propultech_WebpayPlusMallRest/images/webpay-logo.png');
+                return require.toUrl('Propultech_WebpayPlusMallRest/images/webpay-logo.svg');
             },
 
             /**
