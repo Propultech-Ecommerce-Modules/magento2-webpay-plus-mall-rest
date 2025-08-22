@@ -8,6 +8,7 @@
                 <title>Webpay Plus Mall</title>
                 <environment>TEST</environment>
                 <api_key>579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C</api_key>
+                <commerce_code/>
                 <payment_successful_status>processing</payment_successful_status>
                 <payment_error_status>canceled</payment_error_status>
                 <new_order_status>pending_payment</new_order_status>

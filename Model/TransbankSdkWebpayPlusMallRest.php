@@ -10,8 +10,12 @@ use Transbank\Webpay\WebpayPlus\MallTransaction;
 use Transbank\Webpay\WebpayPlus\Exceptions\MallTransactionCreateException;
 use Transbank\Webpay\WebpayPlus\Exceptions\MallTransactionCommitException;
 use Transbank\Webpay\WebpayPlus\Exceptions\MallTransactionRefundException;
+use Transbank\Webpay\WebpayPlus\Exceptions\MallTransactionStatusException;
 use Transbank\Webpay\WebpayPlus\Responses\MallTransactionCommitResponse;
 use Transbank\Webpay\WebpayPlus\Responses\MallTransactionRefundResponse;
+use Transbank\Webpay\WebpayPlus\Responses\MallTransactionStatusResponse;
+use Transbank\Webpay\WebpayPlus;
+use Transbank\Webpay\Options;
 
 /**
  * Class TransbankSdkWebpayPlusMallRest.
@@ -37,11 +41,24 @@ class TransbankSdkWebpayPlusMallRest
         $environment = $config['ENVIRONMENT'] ?? 'TEST';
         $this->log->logInfo('Environment: ' . json_encode($environment));
 
-        if ($environment !== 'TEST') {
-            if (!isset($config['COMMERCE_CODE']) || !isset($config['API_KEY'])) {
+        // Configure SDK depending on environment and provided commerce code
+        $commerceCode = $config['COMMERCE_CODE'] ?? null;
+        $apiKey = $config['API_KEY'] ?? Options::DEFAULT_API_KEY;
+
+        if ($environment === 'TEST') {
+            // If admin explicitly sets "MALL" use default integration mall commerce code
+            if (is_string($commerceCode) && strtoupper(trim($commerceCode)) === 'MALL') {
+                $this->mallTransaction->configureForIntegration(WebpayPlus::DEFAULT_MALL_COMMERCE_CODE, Options::DEFAULT_API_KEY);
+            } elseif (!empty($commerceCode)) {
+                // Allow testing with a specific mall commerce code
+                $this->mallTransaction->configureForIntegration($commerceCode, Options::DEFAULT_API_KEY);
+            }
+            // Otherwise, fallback to SDK default options (already set) which is integration mall
+        } else {
+            if (!isset($commerceCode) || !isset($apiKey)) {
                 throw new LocalizedException(__('Missing Transbank configuration parameters'));
             }
-            $this->mallTransaction->configureForProduction($config['COMMERCE_CODE'], $config['API_KEY']);
+            $this->mallTransaction->configureForProduction($commerceCode, $apiKey);
         }
     }
 
@@ -149,15 +166,14 @@ class TransbankSdkWebpayPlusMallRest
         string $token,
         string $buyOrder,
         string $childCommerceCode,
-        string $childBuyOrder,
         int $amount
     ) {
         try {
-            if (empty($token) || empty($buyOrder) || empty($childCommerceCode) || empty($childBuyOrder) || $amount <= 0) {
+            if (empty($token) || empty($buyOrder) || empty($childCommerceCode) || $amount <= 0) {
                 throw new MissingArgumentException('Missing required parameters for refund');
             }
 
-            $refundResponse = $this->mallTransaction->refund($token, $buyOrder, $childCommerceCode, $childBuyOrder, $amount);
+            $refundResponse = $this->mallTransaction->refund($token, $buyOrder, $childCommerceCode, $amount);
             $this->log->logInfo('refundTransaction: ' . json_encode($refundResponse));
 
             return $refundResponse;
@@ -184,5 +200,35 @@ class TransbankSdkWebpayPlusMallRest
     public function getMallTransaction(): MallTransaction
     {
         return $this->mallTransaction;
+    }
+
+    /**
+     * Get status of a Webpay Plus Mall transaction
+     *
+     * @param string $tokenWs
+     * @return MallTransactionStatusResponse|array
+     */
+    public function statusTransaction(string $tokenWs)
+    {
+        try {
+            if (empty($tokenWs)) {
+                throw new MissingArgumentException('El token webpay es requerido');
+            }
+            $status = $this->mallTransaction->status($tokenWs);
+            $this->log->logInfo('statusTransaction: ' . json_encode($status));
+            return $status;
+        } catch (MallTransactionStatusException $e) {
+            $this->log->logError('MallTransactionStatusException: ' . $e->getMessage());
+            return [
+                'error' => 'Error al consultar estado de la transacción',
+                'detail' => $e->getMessage(),
+            ];
+        } catch (\Exception $e) {
+            $this->log->logError('Exception getting transaction status: ' . $e->getMessage());
+            return [
+                'error' => 'Error inesperado al consultar estado de la transacción',
+                'detail' => $e->getMessage(),
+            ];
+        }
     }
 }

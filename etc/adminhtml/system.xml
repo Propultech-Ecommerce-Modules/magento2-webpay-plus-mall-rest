@@ -28,12 +28,18 @@
                     <label>API Key</label>
                 </field>
 
+                <field id="commerce_code" translate="label" type="text" sortOrder="65" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>Mall Commerce Code</label>
+                    <comment>For production, enter your assigned Mall commerce code.</comment>
+                </field>
+
                 <field id="commerce_codes" translate="label" sortOrder="70" showInDefault="1" showInWebsite="1"
                        showInStore="0">
-                    <label>Commerce Codes</label>
+                    <label>Child Commerce Codes</label>
                     <frontend_model>Propultech\WebpayPlusMallRest\Block\Adminhtml\Form\Field\CommerceCodesRow</frontend_model>
                     <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
-                    <comment>Add commerce names and their corresponding commerce codes.</comment>
+                    <comment>Add child commerce names and their corresponding commerce codes.</comment>
                 </field>
 
                 <field id="payment_successful_status" translate="label" type="select" sortOrder="90" showInDefault="1"
