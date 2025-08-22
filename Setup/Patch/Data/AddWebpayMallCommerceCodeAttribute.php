@@ -2,12 +2,12 @@
 
 namespace Propultech\WebpayPlusMallRest\Setup\Patch\Data;
 
+use Magento\Catalog\Model\Product;
+use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
 use Magento\Eav\Setup\EavSetup;
 use Magento\Eav\Setup\EavSetupFactory;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
-use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
-use Magento\Catalog\Model\Product;
 
 class AddWebpayMallCommerceCodeAttribute implements DataPatchInterface
 {
@@ -17,8 +17,9 @@ class AddWebpayMallCommerceCodeAttribute implements DataPatchInterface
      */
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup,
-        private readonly EavSetupFactory $eavSetupFactory
-    ) {
+        private readonly EavSetupFactory          $eavSetupFactory
+    )
+    {
     }
 
     /**
@@ -39,9 +40,9 @@ class AddWebpayMallCommerceCodeAttribute implements DataPatchInterface
                 'backend' => '',
                 'frontend' => '',
                 'label' => 'Webpay Mall Commerce Code',
-                'input' => 'text',
+                'input' => 'select',
                 'class' => '',
-                'source' => '',
+                'source' => 'Propultech\WebpayPlusMallRest\Model\Config\Source\CommerceCode',
                 'global' => ScopedAttributeInterface::SCOPE_GLOBAL,
                 'visible' => true,
                 'required' => false,
@@ -55,7 +56,7 @@ class AddWebpayMallCommerceCodeAttribute implements DataPatchInterface
                 'unique' => false,
                 'apply_to' => '',
                 'group' => 'General',
-                'note' => 'Commerce code to use for this product in Webpay Plus Mall transactions'
+                'note' => 'Select the commerce code to use for this product in Webpay Plus Mall transactions',
             ]
         );
 

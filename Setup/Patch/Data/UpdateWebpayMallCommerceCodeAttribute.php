@@ -35,8 +35,7 @@ class UpdateWebpayMallCommerceCodeAttribute implements DataPatchInterface
             'webpay_mall_commerce_code',
             [
                 'input' => 'select',
-                'source' => 'Propultech\WebpayPlusMallRest\Model\Config\Source\CommerceCode',
-                'note' => 'Select the commerce code to use for this product in Webpay Plus Mall transactions'
+
             ]
         );
 

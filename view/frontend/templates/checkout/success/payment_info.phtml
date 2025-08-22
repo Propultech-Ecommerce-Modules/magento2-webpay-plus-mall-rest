@@ -1,0 +1,76 @@
+<?php
+/** @var \Propultech\WebpayPlusMallRest\Block\Checkout\Success $block */
+$order = $block->getOrder();
+$info = $block->getPaymentInfo();
+
+if (!$order || !$block->isWebpayPlusMallOrder() || !$info) {
+    // Do not render when not applicable
+    return;
+}
+
+$details = $block->getChildDetails();
+$buyOrder = $info['buy_order'] ?? $order->getIncrementId();
+$token = $info['token_ws'] ?? null;
+$transactionDate = $info['transaction_date'] ?? null;
+$accountingDate = $info['accounting_date'] ?? null;
+$vci = $info['vci'] ?? null;
+$cardLast4 = $info['card']['last4'] ?? null;
+?>
+<div class="block order-success-webpayplusmall">
+    <div class="block-title"><strong><?= __('Payment Information (Webpay Plus Mall)'); ?></strong></div>
+    <div class="block-content">
+        <div class="payment-summary">
+            <p><strong><?= __('Order #'); ?>:</strong> <?= $block->escapeHtml($order->getIncrementId()); ?></p>
+            <p><strong><?= __('Buy Order'); ?>:</strong> <?= $block->escapeHtml($buyOrder); ?></p>
+            <?php if ($token): ?>
+                <p><strong><?= __('Token'); ?>:</strong> <?= $block->escapeHtml($token); ?></p>
+            <?php endif; ?>
+            <?php if ($transactionDate): ?>
+                <p><strong><?= __('Transaction Date'); ?>:</strong> <?= $block->escapeHtml($transactionDate); ?></p>
+            <?php endif; ?>
+            <?php if ($accountingDate): ?>
+                <p><strong><?= __('Accounting Date'); ?>:</strong> <?= $block->escapeHtml($accountingDate); ?></p>
+            <?php endif; ?>
+            <?php if ($vci): ?>
+                <p><strong><?= __('VCI'); ?>:</strong> <?= $block->escapeHtml($vci); ?></p>
+            <?php endif; ?>
+            <?php if ($cardLast4): ?>
+                <p><strong><?= __('Card'); ?>:</strong> **** **** **** <?= $block->escapeHtml($cardLast4); ?></p>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($details)): ?>
+            <div class="table-wrapper webpayplusmall-details">
+                <table class="data table">
+                    <caption class="table-caption"><?= __('Transaction Details'); ?></caption>
+                    <thead>
+                        <tr>
+                            <th scope="col"><?= __('Child Buy Order'); ?></th>
+                            <th scope="col"><?= __('Commerce Code'); ?></th>
+                            <th scope="col"><?= __('Amount'); ?></th>
+                            <th scope="col"><?= __('Authorization Code'); ?></th>
+                            <th scope="col"><?= __('Payment Type'); ?></th>
+                            <th scope="col"><?= __('Installments'); ?></th>
+                            <th scope="col"><?= __('Status'); ?></th>
+                            <th scope="col"><?= __('Response Code'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($details as $row): ?>
+                        <tr>
+                            <td><?= $block->escapeHtml((string)($row['child_buy_order'] ?? '')); ?></td>
+                            <td><?= $block->escapeHtml((string)($row['commerce_code'] ?? '')); ?></td>
+                            <td><?= $block->escapeHtml((string)($row['amount'] ?? '')); ?></td>
+                            <td><?= $block->escapeHtml((string)($row['authorization_code'] ?? '')); ?></td>
+                            <td><?= $block->escapeHtml((string)($row['payment_type_code'] ?? '')); ?></td>
+                            <td><?= $block->escapeHtml((string)($row['installments_number'] ?? '')); ?></td>
+                            <td><?= $block->escapeHtml((string)($row['status'] ?? '')); ?></td>
+                            <td><?= $block->escapeHtml((string)($row['response_code'] ?? '')); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
