@@ -14,4 +14,13 @@
             <argument name="resourceModel" xsi:type="string">Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData</argument>
         </arguments>
     </virtualType>
+
+    <!-- Expose payment config to checkout UI -->
+    <type name="Magento\Checkout\Model\CompositeConfigProvider">
+        <arguments>
+            <argument name="configProviders" xsi:type="array">
+                <item name="propultech_webpayplusmall_config_provider" xsi:type="object">Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider</item>
+            </argument>
+        </arguments>
+    </type>
 </config>
