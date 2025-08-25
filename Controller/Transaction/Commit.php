@@ -3,9 +3,10 @@
 namespace Propultech\WebpayPlusMallRest\Controller\Transaction;
 
 use Magento\Checkout\Model\Session as CheckoutSession;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\DB\Transaction as DbTransaction;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -13,6 +14,7 @@ use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
 use Magento\Sales\Model\Order\Email\Sender\OrderSender;
+use Magento\Sales\Model\Order\Invoice;
 use Magento\Sales\Model\Order\Payment\Transaction;
 use Magento\Sales\Model\Service\InvoiceService;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
@@ -57,7 +59,7 @@ class Commit extends Action
     /**
      * Execute action based on request and return result
      *
-     * @return ResultInterface
+     * @return ResponseInterface
      */
     public function execute()
     {
@@ -102,13 +104,13 @@ class Commit extends Action
                 $this->messageManager->addErrorMessage(__('Invalid transaction response'));
                 return $this->_redirect('checkout/cart');
             }
-        } catch (LocalizedException $e) {
-            $this->log->logError('LocalizedException: ' . $e->getMessage());
-            $this->messageManager->addErrorMessage($e->getMessage());
-            return $this->_redirect('checkout/cart');
         } catch (NoSuchEntityException $e) {
             $this->log->logError('NoSuchEntityException: ' . $e->getMessage());
             $this->messageManager->addErrorMessage(__('Order not found'));
+            return $this->_redirect('checkout/cart');
+        } catch (LocalizedException $e) {
+            $this->log->logError('LocalizedException: ' . $e->getMessage());
+            $this->messageManager->addErrorMessage($e->getMessage());
             return $this->_redirect('checkout/cart');
         } catch (\Exception $e) {
             $this->log->logError('Error in commit transaction: ' . $e->getMessage());
@@ -143,6 +145,7 @@ class Commit extends Action
      *
      * @param Order $order
      * @param MallTransactionCommitResponse $commitResponse
+     * @param string $tokenWs
      * @return void
      */
     private function processSuccessfulPayment(Order $order, MallTransactionCommitResponse $commitResponse, string $tokenWs): void
@@ -152,7 +155,7 @@ class Commit extends Action
 
         // Set payment information
         $payment = $order->getPayment();
-        $firstDetail = isset($commitResponse->details[0]) ? $commitResponse->details[0] : null;
+        $firstDetail = $commitResponse->details[0] ?? null;
         if ($firstDetail && isset($firstDetail->authorizationCode)) {
             $payment->setLastTransId($firstDetail->authorizationCode);
             $payment->setTransactionId($firstDetail->authorizationCode);
@@ -249,10 +252,11 @@ class Commit extends Action
     {
         try {
             $invoice = $this->invoiceService->prepareInvoice($order);
-            $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
+            $invoice->setRequestedCaptureCase(Invoice::CAPTURE_ONLINE);
             $invoice->register();
             $invoice->getOrder()->setCustomerNoteNotify(false);
             $invoice->getOrder()->setIsInProcess(true);
+            $invoice->pay();
             $this->dbTransaction->addObject($invoice)->addObject($invoice->getOrder())->save();
             $this->invoiceSender->send($invoice);
         } catch (\Exception $e) {
@@ -269,9 +273,8 @@ class Commit extends Action
     private function getOrderByIncrementId(string $incrementId): ?Order
     {
         try {
-            $searchCriteria = $this->_objectManager->create(
-                \Magento\Framework\Api\SearchCriteriaBuilder::class
-            )->addFilter('increment_id', $incrementId, 'eq')
+            $searchCriteria = $this->_objectManager->create(SearchCriteriaBuilder::class)
+                ->addFilter('increment_id', $incrementId)
                 ->create();
 
             $orderList = $this->orderRepository->getList($searchCriteria);
