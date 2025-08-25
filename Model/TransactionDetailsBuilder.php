@@ -60,8 +60,7 @@ class TransactionDetailsBuilder
             $details[] = [
                 "commerce_code" => $commerceCode,
                 "buy_order" => $buyOrderPrefix . $order->getId() . '_' . $i,
-                "amount" => (int)round($amount),
-                "installments_number" => 1
+                "amount" => (int)round($amount)
             ];
             $i++;
         }
@@ -71,8 +70,7 @@ class TransactionDetailsBuilder
             $details[] = [
                 "commerce_code" => $defaultCommerceCode,
                 "buy_order" => $buyOrderPrefix . $order->getId() . '_0',
-                "amount" => (int)round($order->getGrandTotal()),
-                "installments_number" => 1
+                "amount" => (int)round($order->getGrandTotal())
             ];
         }
 
