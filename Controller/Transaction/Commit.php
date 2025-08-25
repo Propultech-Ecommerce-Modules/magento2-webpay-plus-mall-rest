@@ -3,9 +3,9 @@
 namespace Propultech\WebpayPlusMallRest\Controller\Transaction;
 
 use Magento\Checkout\Model\Session as CheckoutSession;
-use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
+use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\DB\Transaction as DbTransaction;
 use Magento\Framework\Exception\LocalizedException;
@@ -266,16 +266,8 @@ class Commit extends Action
     private function getOrderByIncrementId(string $incrementId): ?Order
     {
         try {
-            $searchCriteria = $this->_objectManager->create(SearchCriteriaBuilder::class)
-                ->addFilter('increment_id', $incrementId)
-                ->create();
-
-            $orderList = $this->orderRepository->getList($searchCriteria);
-            if ($orderList->getTotalCount()) {
-                return $orderList->getItems()[0];
-            }
-
-            return null;
+            $objectManager = ObjectManager::getInstance();
+            return $objectManager->create(Order::class)->loadByIncrementId($incrementId);
         } catch (\Exception $e) {
             $this->log->logError('Error loading order by increment ID: ' . $e->getMessage());
             return null;
