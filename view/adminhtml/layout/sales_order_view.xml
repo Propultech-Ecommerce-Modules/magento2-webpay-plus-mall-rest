@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="order_payment_additional">
+            <block class="Propultech\WebpayPlusMallRest\Block\Adminhtml\Order\View\PaymentInfo"
+                   name="propultech_webpayplusmall_admin_order_payment_info"
+                   template="Propultech_WebpayPlusMallRest::order/view/payment_info.phtml"
+                   ifconfig="payment/propultech_webpayplusmall/active">
+                <arguments>
+                    <argument name="title" xsi:type="string" translate="true">Payment Information (Webpay Plus Mall)</argument>
+                </arguments>
+            </block>
+        </referenceBlock>
+    </body>
+</page>
