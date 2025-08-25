@@ -198,7 +198,7 @@ class Commit extends Action
         $order->addStatusToHistory($order->getStatus(), $message);
 
         // Create invoice if configured
-        if ($this->configProvider->getInvoiceSettings() === 'automatic' && $order->canInvoice()) {
+        if ($this->configProvider->getInvoiceSettings() === 'transbank' && $order->canInvoice()) {
             $this->createInvoice($order);
         }
 
