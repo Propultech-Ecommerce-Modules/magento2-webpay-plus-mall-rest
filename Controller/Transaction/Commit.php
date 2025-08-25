@@ -249,8 +249,9 @@ class Commit extends Action
             $invoice->register();
             $invoice->getOrder()->setCustomerNoteNotify(false);
             $invoice->getOrder()->setIsInProcess(true);
-            $invoice->pay();
             $this->dbTransaction->addObject($invoice)->addObject($invoice->getOrder())->save();
+            $invoice->pay();
+            $invoice->save();
             $this->invoiceSender->send($invoice);
         } catch (\Exception $e) {
             $this->log->logError('Error creating invoice: ' . $e->getMessage());
