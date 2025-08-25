@@ -5,21 +5,19 @@ declare(strict_types=1);
 namespace Propultech\WebpayPlusMallRest\Controller\Adminhtml\Transactions;
 
 use Magento\Backend\App\Action;
-use Magento\Backend\App\Action\Context;
 use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\View\Result\Page;
 
 class View extends Action
 {
     public const ADMIN_RESOURCE = 'Propultech_WebpayPlusMallRest::transactions';
 
-    public function __construct(Context $context)
-    {
-        parent::__construct($context);
-    }
-
-    public function execute(): Page|Redirect
+    /**
+     * @return ResultInterface|Page|Redirect
+     */
+    public function execute()
     {
         $id = (int)$this->getRequest()->getParam('id');
         if (!$id) {

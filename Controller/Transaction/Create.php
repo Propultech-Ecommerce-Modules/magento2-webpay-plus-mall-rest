@@ -2,21 +2,18 @@
 
 namespace Propultech\WebpayPlusMallRest\Controller\Transaction;
 
+use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Quote\Model\QuoteManagement;
 use Magento\Sales\Model\Order;
 use Magento\Store\Model\StoreManagerInterface;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
-use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRest;
-use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRestFactory;
 use Propultech\WebpayPlusMallRest\Model\TransactionDetailsBuilder;
-use Propultech\WebpayPlusMallRest\Model\WebpayPlusMall;
+use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRestFactory;
 use Transbank\Webpay\Helper\PluginLogger;
 
 /**
@@ -28,7 +25,6 @@ class Create extends Action
      * @param Context $context
      * @param CheckoutSession $checkoutSession
      * @param JsonFactory $resultJsonFactory
-     * @param QuoteManagement $quoteManagement
      * @param StoreManagerInterface $storeManager
      * @param ConfigProvider $configProvider
      * @param TransactionDetailsBuilder $transactionDetailsBuilder
@@ -36,16 +32,16 @@ class Create extends Action
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      */
     public function __construct(
-        Context $context,
-        private CheckoutSession $checkoutSession,
-        private JsonFactory $resultJsonFactory,
-        private QuoteManagement $quoteManagement,
-        private StoreManagerInterface $storeManager,
-        private ConfigProvider $configProvider,
-        private TransactionDetailsBuilder $transactionDetailsBuilder,
-        private PluginLogger $log,
-        private TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
-    ) {
+        Context                                                $context,
+        private readonly CheckoutSession                       $checkoutSession,
+        private readonly JsonFactory                           $resultJsonFactory,
+        private readonly StoreManagerInterface                 $storeManager,
+        private readonly ConfigProvider                        $configProvider,
+        private readonly TransactionDetailsBuilder             $transactionDetailsBuilder,
+        private readonly PluginLogger                          $log,
+        private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
+    )
+    {
         parent::__construct($context);
     }
 
@@ -53,8 +49,9 @@ class Create extends Action
      * Execute action based on request and return result
      *
      * @return ResultInterface
+     * @throws \Exception
      */
-    public function execute(): ResultInterface
+    public function execute()
     {
         $response = null;
         $order = null;
@@ -129,6 +126,7 @@ class Create extends Action
      * @param string $status
      * @param string $message
      * @return void
+     * @throws \Exception
      */
     private function updateOrderStatus(Order $order, string $status, string $message): void
     {
@@ -144,6 +142,7 @@ class Create extends Action
      * @param string $status
      * @param string $message
      * @return void
+     * @throws \Exception
      */
     private function cancelOrder(Order $order, string $status, string $message): void
     {
@@ -160,6 +159,7 @@ class Create extends Action
      * @param string $errorStatus
      * @param string $errorMessage
      * @return void
+     * @throws \Exception
      */
     private function handleOrderError(?Order $order, string $errorStatus, string $errorMessage): void
     {

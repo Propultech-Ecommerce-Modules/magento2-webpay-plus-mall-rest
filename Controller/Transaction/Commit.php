@@ -2,22 +2,20 @@
 
 namespace Propultech\WebpayPlusMallRest\Controller\Transaction;
 
+use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\DB\Transaction as DbTransaction;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\View\Result\PageFactory;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
-use Magento\Sales\Model\Order\Payment\Transaction;
-use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 use Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
+use Magento\Sales\Model\Order\Email\Sender\OrderSender;
+use Magento\Sales\Model\Order\Payment\Transaction;
 use Magento\Sales\Model\Service\InvoiceService;
-use Magento\Framework\DB\Transaction as DbTransaction;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
-use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRest;
 use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRestFactory;
 use Propultech\WebpayPlusMallRest\Model\WebpayPlusMall;
 use Transbank\Webpay\Helper\PluginLogger;
@@ -31,7 +29,6 @@ class Commit extends Action
     /**
      * @param Context $context
      * @param CheckoutSession $checkoutSession
-     * @param PageFactory $resultPageFactory
      * @param ConfigProvider $configProvider
      * @param OrderSender $orderSender
      * @param InvoiceSender $invoiceSender
@@ -42,18 +39,18 @@ class Commit extends Action
      * @param OrderRepositoryInterface $orderRepository
      */
     public function __construct(
-        Context $context,
-        private CheckoutSession $checkoutSession,
-        private PageFactory $resultPageFactory,
-        private ConfigProvider $configProvider,
-        private OrderSender $orderSender,
-        private InvoiceSender $invoiceSender,
-        private InvoiceService $invoiceService,
-        private DbTransaction $dbTransaction,
-        private PluginLogger $log,
-        private TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
-        private OrderRepositoryInterface $orderRepository
-    ) {
+        Context                                                $context,
+        private readonly CheckoutSession                       $checkoutSession,
+        private readonly ConfigProvider                        $configProvider,
+        private readonly OrderSender                           $orderSender,
+        private readonly InvoiceSender                         $invoiceSender,
+        private readonly InvoiceService                        $invoiceService,
+        private readonly DbTransaction                         $dbTransaction,
+        private readonly PluginLogger                          $log,
+        private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
+        private readonly OrderRepositoryInterface              $orderRepository
+    )
+    {
         parent::__construct($context);
     }
 
@@ -62,7 +59,7 @@ class Commit extends Action
      *
      * @return ResultInterface
      */
-    public function execute(): ResultInterface
+    public function execute()
     {
         $tokenWs = $this->getRequest()->getParam('token_ws');
         $this->log->logInfo('Commit transaction with token: ' . ($tokenWs ?? 'null'));
