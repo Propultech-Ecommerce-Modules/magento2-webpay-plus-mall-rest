@@ -67,8 +67,7 @@ class Commit extends Action
         $this->log->logInfo('Commit transaction with token: ' . ($tokenWs ?? 'null'));
 
         if (empty($tokenWs)) {
-            $this->messageManager->addErrorMessage(__('Invalid transaction token'));
-            return $this->_redirect('checkout/cart');
+            return $this->redirectToCartWithError(__('Invalid transaction token'));
         }
 
         try {
@@ -94,28 +93,22 @@ class Commit extends Action
                     return $this->_redirect('checkout/onepage/success');
                 } else {
                     $this->processFailedPayment($order, $commitResponse);
-                    $this->messageManager->addErrorMessage(__('Payment was not approved by the bank'));
-                    return $this->_redirect('checkout/cart');
+                    return $this->redirectToCartWithError(__('Payment was not approved by the bank'));
                 }
             } else if (isset($commitResponse['error'])) {
-                $this->messageManager->addErrorMessage(__('Error: %1', $commitResponse['detail'] ?? $commitResponse['error']));
-                return $this->_redirect('checkout/cart');
+                return $this->redirectToCartWithError(__('Error: %1', $commitResponse['detail'] ?? $commitResponse['error']));
             } else {
-                $this->messageManager->addErrorMessage(__('Invalid transaction response'));
-                return $this->_redirect('checkout/cart');
+                return $this->redirectToCartWithError(__('Invalid transaction response'));
             }
         } catch (NoSuchEntityException $e) {
             $this->log->logError('NoSuchEntityException: ' . $e->getMessage());
-            $this->messageManager->addErrorMessage(__('Order not found'));
-            return $this->_redirect('checkout/cart');
+            return $this->redirectToCartWithError(__('Order not found'));
         } catch (LocalizedException $e) {
             $this->log->logError('LocalizedException: ' . $e->getMessage());
-            $this->messageManager->addErrorMessage($e->getMessage());
-            return $this->_redirect('checkout/cart');
+            return $this->redirectToCartWithError(__($e->getMessage()));
         } catch (\Exception $e) {
             $this->log->logError('Error in commit transaction: ' . $e->getMessage());
-            $this->messageManager->addErrorMessage(__('Error processing payment: %1', $e->getMessage()));
-            return $this->_redirect('checkout/cart');
+            return $this->redirectToCartWithError(__('Error processing payment: %1', $e->getMessage()));
         }
     }
 
@@ -287,5 +280,29 @@ class Commit extends Action
             $this->log->logError('Error loading order by increment ID: ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Restore the customer's quote to the session
+     */
+    private function restoreQuote(): void
+    {
+        try {
+            $this->checkoutSession->restoreQuote();
+        } catch (\Exception $e) {
+            $this->log->logError('Error restoring quote: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Add error message, restore quote and redirect to cart
+     */
+    private function redirectToCartWithError($message): \Magento\Framework\App\ResponseInterface
+    {
+        if ($message) {
+            $this->messageManager->addErrorMessage($message);
+        }
+        $this->restoreQuote();
+        return $this->_redirect('checkout/cart');
     }
 }
