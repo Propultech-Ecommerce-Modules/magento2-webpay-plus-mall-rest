@@ -14,14 +14,12 @@
 "Email send behavior","Comportamiento de envío de correo"
 "Invoice Generation","Generación de factura"
 "-- Please Select --","-- Seleccione --"
-
 "Webpay Plus Mall Transactions","Transacciones Webpay Plus Mall"
 "Webpay Plus Mall Transaction #%1","Transacción Webpay Plus Mall #%1"
 "Transactions","Transacciones"
 "Missing transaction identifier.","Falta el identificador de la transacción."
 "Back to Transactions","Volver a Transacciones"
 "View","Ver"
-
 "ID","ID"
 "Order Id","ID de pedido"
 "Buy Order","Orden de compra"
@@ -45,7 +43,6 @@
 "Installments","Cuotas"
 "Status","Estado"
 "Response Code","Código de respuesta"
-
 "Invalid transaction token","Token de transacción inválido"
 "Order not found","Pedido no encontrado"
 "Order not found for buyOrder: %1","Pedido no encontrado para buyOrder: %1"
@@ -53,9 +50,7 @@
 "Error: %1","Error: %1"
 "Invalid transaction response","Respuesta de transacción inválida"
 "Error processing payment: %1","Error al procesar el pago: %1"
-
 "Place Order","Realizar pedido"
-
 "Commerce Name","Nombre del comercio"
 "Add Commerce Code","Agregar código de comercio"
 "Missing Transbank configuration parameters","Faltan parámetros de configuración de Transbank"
