@@ -10,6 +10,7 @@ use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\DB\Transaction as DbTransaction;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\App\ResourceConnection;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
@@ -48,6 +49,7 @@ class Commit extends Action
         private readonly InvoiceSender                         $invoiceSender,
         private readonly InvoiceService                        $invoiceService,
         private readonly DbTransaction                         $dbTransaction,
+        private readonly ResourceConnection                    $resourceConnection,
         private readonly PluginLogger                          $log,
         private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
         private readonly OrderRepositoryInterface              $orderRepository
@@ -202,12 +204,21 @@ class Commit extends Action
             $this->createInvoice($order);
         }
 
-        // Send email if configured
+        // Persist transaction rows
+        $this->persistTransactionData($order, $commitResponse, $tokenWs, $additional);
+
+        // Save order before sending email
+        $this->orderRepository->save($order);
+
+        // Send email if configured (after save)
         if ($this->configProvider->getEmailBehavior() === 'after_payment') {
+            try {
+                $order = $this->orderRepository->get($order->getId());
+            } catch (\Exception $e) {
+                $this->log->logError('Error reloading order before email: ' . $e->getMessage());
+            }
             $this->orderSender->send($order);
         }
-
-        $this->orderRepository->save($order);
 
         // Set checkout session data
         $this->checkoutSession->setLastQuoteId($order->getQuoteId());
@@ -215,6 +226,91 @@ class Commit extends Action
         $this->checkoutSession->setLastOrderId($order->getId());
         $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
         $this->checkoutSession->setLastOrderStatus($order->getStatus());
+    }
+
+    /**
+     * Persist transaction rows into webpay_mall_order_data table
+     *
+     * @param Order $order
+     * @param MallTransactionCommitResponse $commitResponse
+     * @param string $tokenWs
+     * @param array $metadata
+     */
+    private function persistTransactionData(Order $order, MallTransactionCommitResponse $commitResponse, string $tokenWs, array $metadata): void
+    {
+        try {
+            $connection = $this->resourceConnection->getConnection();
+            $table = $this->resourceConnection->getTableName('webpay_mall_order_data');
+
+            $buyOrder = (string)($commitResponse->buyOrder ?? $order->getIncrementId());
+            $sessionId = (string)($commitResponse->sessionId ?? '');
+            $quoteId = (string)$order->getQuoteId();
+            $product = WebpayPlusMall::PRODUCT_NAME;
+            $environment = (string)($this->configProvider->getPluginConfig()['ENVIRONMENT'] ?? '');
+
+            $commerceCodes = [];
+            if (!empty($commitResponse->details) && is_array($commitResponse->details)) {
+                foreach ($commitResponse->details as $d) {
+                    if (isset($d->commerceCode)) {
+                        $commerceCodes[] = (string)$d->commerceCode;
+                    }
+                }
+            }
+            $commerceCodesJson = json_encode($commerceCodes);
+
+            // Prevent duplicates for the same token
+            $connection->delete($table, ['token = ?' => substr($tokenWs, 0, 100)]);
+
+            $rows = [];
+            if (!empty($commitResponse->details) && is_array($commitResponse->details)) {
+                foreach ($commitResponse->details as $d) {
+                    $rows[] = [
+                        'order_id' => substr((string)$order->getIncrementId(), 0, 60),
+                        'buy_order' => substr($buyOrder, 0, 20),
+                        'child_buy_order' => substr((string)($d->buyOrder ?? ''), 0, 20),
+                        'commerce_codes' => $commerceCodesJson ?: '[]',
+                        'child_commerce_code' => substr((string)($d->commerceCode ?? ''), 0, 60),
+                        'amount' => (int)($d->amount ?? 0),
+                        'token' => substr($tokenWs, 0, 100),
+                        'transbank_status' => json_encode([
+                            'status' => $d->status ?? null,
+                            'response_code' => $d->responseCode ?? null,
+                            'authorization_code' => $d->authorizationCode ?? null,
+                        ]),
+                        'session_id' => substr($sessionId, 0, 20),
+                        'quote_id' => substr($quoteId, 0, 20),
+                        'payment_status' => 'APPROVED',
+                        'metadata' => json_encode($metadata),
+                        'product' => substr($product, 0, 50),
+                        'environment' => substr($environment, 0, 50),
+                    ];
+                }
+            } else {
+                // Fallback single row if no details present
+                $rows[] = [
+                    'order_id' => substr((string)$order->getIncrementId(), 0, 60),
+                    'buy_order' => substr($buyOrder, 0, 20),
+                    'child_buy_order' => substr($buyOrder, 0, 20),
+                    'commerce_codes' => $commerceCodesJson ?: '[]',
+                    'child_commerce_code' => substr((string)($this->configProvider->getPluginConfig()['COMMERCE_CODE'] ?? ''), 0, 60),
+                    'amount' => (int)round((float)$order->getGrandTotal()),
+                    'token' => substr($tokenWs, 0, 100),
+                    'transbank_status' => json_encode(['status' => 'APPROVED']),
+                    'session_id' => substr($sessionId, 0, 20),
+                    'quote_id' => substr($quoteId, 0, 20),
+                    'payment_status' => 'APPROVED',
+                    'metadata' => json_encode($metadata),
+                    'product' => substr($product, 0, 50),
+                    'environment' => substr($environment, 0, 50),
+                ];
+            }
+
+            if (!empty($rows)) {
+                $connection->insertMultiple($table, $rows);
+            }
+        } catch (\Throwable $e) {
+            $this->log->logError('Error persisting webpay_mall_order_data: ' . $e->getMessage());
+        }
     }
 
     /**
