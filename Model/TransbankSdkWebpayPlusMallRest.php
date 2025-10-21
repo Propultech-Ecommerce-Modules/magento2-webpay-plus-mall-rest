@@ -2,6 +2,7 @@
 
 namespace Propultech\WebpayPlusMallRest\Model;
 
+use GuzzleHttp\Exception\GuzzleException;
 use Magento\Framework\Exception\LocalizedException;
 use Transbank\Webpay\Exceptions\MissingArgumentException;
 use Transbank\Webpay\Exceptions\TransbankCreateException;
@@ -30,7 +31,9 @@ class TransbankSdkWebpayPlusMallRest
     /**
      * TransbankSdkWebpayPlusMallRest constructor.
      *
+     * @param PluginLogger $log
      * @param array $config
+     * @throws LocalizedException
      */
     public function __construct(
         private PluginLogger $log,
@@ -70,9 +73,9 @@ class TransbankSdkWebpayPlusMallRest
      * @param string $returnUrl
      * @param array $details
      *
-     * @throws TransbankCreateException
-     *
      * @return array
+     *@throws GuzzleException
+     *
      */
     public function createTransaction(string $buyOrder, string $sessionId, string $returnUrl, array $details): array
     {
@@ -157,10 +160,10 @@ class TransbankSdkWebpayPlusMallRest
      * @param string $token
      * @param string $buyOrder
      * @param string $childCommerceCode
-     * @param string $childBuyOrder
      * @param int $amount
      *
      * @return MallTransactionRefundResponse|array
+     * @throws GuzzleException
      */
     public function refundTransaction(
         string $token,

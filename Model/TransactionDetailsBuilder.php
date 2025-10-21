@@ -15,8 +15,9 @@ class TransactionDetailsBuilder
      */
     public function __construct(
         private ProductRepositoryInterface $productRepository,
-        private ScopeConfigInterface $scopeConfig
-    ) {
+        private ScopeConfigInterface       $scopeConfig
+    )
+    {
     }
 
     /**
@@ -26,7 +27,7 @@ class TransactionDetailsBuilder
      * @param string $buyOrderPrefix
      * @return array
      */
-    public function build(Order $order, string $buyOrderPrefix = '200000'): array
+    public function build(Order $order, string $buyOrderPrefix = ''): array
     {
         $items = $order->getAllItems();
         $commerceCodeGroups = [];
@@ -36,7 +37,7 @@ class TransactionDetailsBuilder
         foreach ($items as $item) {
             try {
                 $product = $this->productRepository->getById($item->getProductId());
-                $commerceCode = $product->getData('webpay_mall_commerce_code');
+                $commerceCode = $product->getData('webpay_mall_commerce_code') ?? $defaultCommerceCode;
 
                 if (!isset($commerceCodeGroups[$commerceCode])) {
                     $commerceCodeGroups[$commerceCode] = 0;
@@ -59,7 +60,7 @@ class TransactionDetailsBuilder
 
             $details[] = [
                 "commerce_code" => $commerceCode,
-                "buy_order" => $buyOrderPrefix . $order->getId() . '_' . $i,
+                "buy_order" => $buyOrderPrefix . $order->getIncrementId() . '_' . $i,
                 "amount" => (int)round($amount)
             ];
             $i++;
