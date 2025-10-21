@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
-        <referenceBlock name="order_payment_additional">
+        <referenceBlock name="payment_additional_info">
             <block class="Propultech\WebpayPlusMallRest\Block\Adminhtml\Order\View\PaymentInfo"
                    name="propultech_webpayplusmall_admin_order_payment_info"
                    template="Propultech_WebpayPlusMallRest::order/view/payment_info.phtml"
