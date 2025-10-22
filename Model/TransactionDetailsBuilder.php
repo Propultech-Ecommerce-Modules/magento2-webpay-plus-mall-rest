@@ -4,6 +4,7 @@ namespace Propultech\WebpayPlusMallRest\Model;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
 use Magento\Store\Model\ScopeInterface;
 
@@ -82,6 +83,7 @@ class TransactionDetailsBuilder
      * Get default child commerce code from configuration
      *
      * @return string
+     * @throws LocalizedException
      */
     private function getDefaultChildCommerceCode(): string
     {
@@ -91,11 +93,12 @@ class TransactionDetailsBuilder
         );
 
         $commerceCodes = json_decode($commerceCodesJson, true);
+        $first = array_key_first($commerceCodes);
 
-        if (!empty($commerceCodes) && is_array($commerceCodes) && isset($commerceCodes[0]['commerce_code'])) {
-            return (string)$commerceCodes[0]['commerce_code'];
+        if (!empty($commerceCodes) && is_array($commerceCodes) && isset($commerceCodes[$first]['commerce_code'])) {
+            return (string)$commerceCodes[$first]['commerce_code'];
         }
 
-        return '';
+        throw new LocalizedException(__('No default commerce code found in configuration'));
     }
 }
