@@ -77,7 +77,7 @@ class Commit extends Action
 
         try {
             $transbankSdkWebpay = $this->transbankSdkFactory->create([
-                'logger' => $this->log,
+                'logger' => $this->logger,
                 'config' => $this->configProvider->getPluginConfig()
             ]);
 
