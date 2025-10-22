@@ -14,7 +14,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
 use Propultech\WebpayPlusMallRest\Model\TransactionDetailsBuilder;
 use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRestFactory;
-use Transbank\Webpay\Helper\PluginLogger;
+use Psr\Log\LoggerInterface;
 
 /**
  * Controller for creating Webpay Plus Mall transactions.
@@ -28,7 +28,7 @@ class Create extends Action
      * @param StoreManagerInterface $storeManager
      * @param ConfigProvider $configProvider
      * @param TransactionDetailsBuilder $transactionDetailsBuilder
-     * @param PluginLogger $log
+     * @param LoggerInterface $log
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      */
     public function __construct(
@@ -38,7 +38,7 @@ class Create extends Action
         private readonly StoreManagerInterface                 $storeManager,
         private readonly ConfigProvider                        $configProvider,
         private readonly TransactionDetailsBuilder             $transactionDetailsBuilder,
-        private readonly PluginLogger                          $log,
+        private readonly LoggerInterface                       $log,
         private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
     )
     {

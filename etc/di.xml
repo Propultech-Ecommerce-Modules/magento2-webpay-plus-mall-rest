@@ -23,4 +23,29 @@
             </argument>
         </arguments>
     </type>
+
+    <!-- Logger wiring: write to var/log/webpaymall.log -->
+    <type name="Propultech\WebpayPlusMallRest\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">webpaymall</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="stream" xsi:type="object">Propultech\WebpayPlusMallRest\Logger\Handler\WebpayMallHandler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Propultech\WebpayPlusMallRest\Controller\Transaction\Create">
+        <arguments>
+            <argument name="logger" xsi:type="string">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Propultech\WebpayPlusMallRest\Controller\Transaction\Commit">
+        <arguments>
+            <argument name="logger" xsi:type="string">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Propultech\WebpayPlusMallRest\Model\TransactionDetailsBuilder">
+        <arguments>
+            <argument name="logger" xsi:type="string">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
+        </arguments>
+    </type>
 </config>

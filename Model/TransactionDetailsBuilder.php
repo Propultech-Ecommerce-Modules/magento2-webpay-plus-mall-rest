@@ -7,16 +7,19 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
 use Magento\Store\Model\ScopeInterface;
+use Psr\Log\LoggerInterface;
 
 class TransactionDetailsBuilder
 {
     /**
      * @param ProductRepositoryInterface $productRepository
      * @param ScopeConfigInterface $scopeConfig
+     * @param LoggerInterface $logger
      */
     public function __construct(
         private ProductRepositoryInterface $productRepository,
-        private ScopeConfigInterface       $scopeConfig
+        private ScopeConfigInterface       $scopeConfig,
+        private readonly LoggerInterface   $logger
     )
     {
     }
@@ -27,34 +30,55 @@ class TransactionDetailsBuilder
      * @param Order $order
      * @param string $buyOrderPrefix
      * @return array
+     * @throws LocalizedException
      */
     public function build(Order $order, string $buyOrderPrefix = ''): array
     {
+        $orderId = (string)$order->getIncrementId();
+        $grandTotal = (float)$order->getGrandTotal();
         $items = $order->getAllItems();
+        $this->logger->logInfo('Building Webpay Mall transaction details', [
+            'order' => $orderId,
+            'itemsCount' => count($items),
+            'grandTotal' => (int)round($grandTotal)
+        ]);
+
         $commerceCodeGroups = [];
         $defaultCommerceCode = $this->getDefaultChildCommerceCode();
+        $this->logger->logInfo('Default child commerce code resolved', ['code' => $defaultCommerceCode]);
 
         // Group items by commerce code (sum of item rows including tax)
         foreach ($items as $item) {
             try {
-                $product = $this->productRepository->getById((int)$item->getProductId());
+                $productId = (int)$item->getProductId();
+                $product = $this->productRepository->getById($productId);
                 $commerceCode = $product->getData('webpay_mall_commerce_code') ?? $defaultCommerceCode;
 
                 if (!isset($commerceCodeGroups[$commerceCode])) {
                     $commerceCodeGroups[$commerceCode] = 0.0;
                 }
-                $rowTotalInclTax = (float)$item->getRowTotalInclTax() - $item->getDiscountAmount();
+                $rowTotalInclTax = (float)$item->getRowTotalInclTax() - (float)$item->getDiscountAmount();
                 $commerceCodeGroups[$commerceCode] += $rowTotalInclTax;
             } catch (\Exception $e) {
                 // If a product cannot be loaded, skip the item but keep building the rest
+                $this->logger->logError('Failed to load product while grouping items for transaction details', [
+                    'order' => $orderId,
+                    'itemId' => $item->getItemId(),
+                    'productId' => $item->getProductId(),
+                    'error' => $e->getMessage()
+                ]);
                 continue;
             }
         }
 
         // If we couldn't group any item by commerce code, fallback to default commerce code with full grand total
-        $grandTotal = (float)$order->getGrandTotal();
         if (empty($commerceCodeGroups)) {
             if (!empty($defaultCommerceCode)) {
+                $this->logger->logInfo('No items grouped by commerce code. Falling back to default commerce code for full total', [
+                    'order' => $orderId,
+                    'defaultCommerceCode' => $defaultCommerceCode,
+                    'amount' => (int)round($grandTotal)
+                ]);
                 return [[
                     'commerce_code' => $defaultCommerceCode,
                     'buy_order' => $buyOrderPrefix . $order->getId() . '_0',
@@ -62,6 +86,9 @@ class TransactionDetailsBuilder
                 ]];
             }
             // If there is no default code either, this is a configuration problem
+            $this->logger->logError('No commerce codes available to build transaction details (empty groups and no default)', [
+                'order' => $orderId
+            ]);
             throw new LocalizedException(__('No commerce codes available to build transaction details'));
         }
 
@@ -71,8 +98,19 @@ class TransactionDetailsBuilder
         foreach ($commerceCodeGroups as $cc => $subtotal) {
             $sumItems += (float)$subtotal;
         }
+        $this->logger->logInfo('Grouped subtotals by commerce code', [
+            'order' => $orderId,
+            'groups' => $commerceCodeGroups,
+            'sumItemsRounded' => (int)round($sumItems)
+        ]);
 
-        $adjustment = (float)round($grandTotal) - (int)round($sumItems); // work in integer cents (CLP has no cents but we keep int)
+        $adjustment = (int)round($grandTotal) - (int)round($sumItems); // integer units (CLP)
+        $this->logger->logInfo('Computed order-level adjustment to distribute', [
+            'order' => $orderId,
+            'grandTotalRounded' => (int)round($grandTotal),
+            'sumItemsRounded' => (int)round($sumItems),
+            'adjustment' => (int)$adjustment
+        ]);
 
         // Prepare structures for allocation
         $groups = [];
@@ -91,12 +129,19 @@ class TransactionDetailsBuilder
         if ($n === 0) {
             // Safety (shouldn't happen due to early return), but handle just in case
             if (!empty($defaultCommerceCode)) {
+                $this->logger->logError('Safety fallback reached: no groups after grouping, using default code', [
+                    'order' => $orderId,
+                    'defaultCommerceCode' => $defaultCommerceCode
+                ]);
                 return [[
                     'commerce_code' => $defaultCommerceCode,
                     'buy_order' => $buyOrderPrefix . $order->getId() . '_0',
                     'amount' => (int)round($grandTotal)
                 ]];
             }
+            $this->logger->logError('No commerce codes available to build transaction details (safety check)', [
+                'order' => $orderId
+            ]);
             throw new LocalizedException(__('No commerce codes available to build transaction details'));
         }
 
@@ -125,7 +170,7 @@ class TransactionDetailsBuilder
         foreach ($groups as $g) {
             $allocated += $g['shareInt'];
         }
-        $remainder = (int)$adjustment - (int)$allocated; // remainder >= 0
+        $remainder = (int)$adjustment - (int)$allocated;
         if ($remainder !== 0) {
             // Sort by descending fractional part
             usort($groups, function ($a, $b) {
@@ -135,8 +180,19 @@ class TransactionDetailsBuilder
             for ($k = 0; $k < $remainder && $k < count($groups); $k++) {
                 $groups[$k]['shareInt'] += 1;
             }
-            // Restore original order is not strictly needed; we'll iterate groups to build details regardless
         }
+
+        $this->logger->logInfo('Allocation after distributing adjustment and remainder', [
+            'order' => $orderId,
+            'groups' => array_map(function ($g) {
+                return [
+                    'commerce_code' => $g['commerce_code'],
+                    'base' => $g['base'],
+                    'shareInt' => $g['shareInt']
+                ];
+            }, $groups),
+            'adjustment' => (int)$adjustment
+        ]);
 
         // Build final details and validate sums
         $details = [];
@@ -146,6 +202,10 @@ class TransactionDetailsBuilder
             $amount = (int)$g['base'] + (int)$g['shareInt'];
             if (empty($g['commerce_code'])) {
                 // Skip empty commerce codes
+                $this->logger->logError('Encountered empty commerce code during details build, skipping', [
+                    'order' => $orderId,
+                    'group' => $g
+                ]);
                 continue;
             }
             $details[] = [
@@ -159,8 +219,20 @@ class TransactionDetailsBuilder
 
         $expected = (int)round($grandTotal);
         if ($detailsSum !== $expected) {
+            $this->logger->logError('Transaction details sum does not match order total', [
+                'order' => $orderId,
+                'detailsSum' => (int)$detailsSum,
+                'expected' => (int)$expected,
+                'details' => $details
+            ]);
             throw new LocalizedException(__('Transaction details total (%1) does not match order total (%2).', $detailsSum, $expected));
         }
+
+        $this->logger->logInfo('Built Webpay Mall transaction details successfully', [
+            'order' => $orderId,
+            'details' => $details,
+            'total' => $detailsSum
+        ]);
 
         return $details;
     }
@@ -178,13 +250,21 @@ class TransactionDetailsBuilder
             ScopeInterface::SCOPE_STORE
         );
 
-        $commerceCodes = json_decode($commerceCodesJson, true);
-        $first = array_key_first($commerceCodes);
+        $commerceCodes = json_decode($commerceCodesJson ?? '[]', true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->logger->logError('Invalid JSON in commerce codes configuration', [
+                'raw' => (string)$commerceCodesJson,
+                'error' => json_last_error_msg()
+            ]);
+        }
+        $first = is_array($commerceCodes) ? array_key_first($commerceCodes) : null;
 
         if (!empty($commerceCodes) && is_array($commerceCodes) && isset($commerceCodes[$first]['commerce_code'])) {
-            return (string)$commerceCodes[$first]['commerce_code'];
+            $code = (string)$commerceCodes[$first]['commerce_code'];
+            return $code;
         }
 
+        $this->logger->logError('No default commerce code found in configuration');
         throw new LocalizedException(__('No default commerce code found in configuration'));
     }
 }

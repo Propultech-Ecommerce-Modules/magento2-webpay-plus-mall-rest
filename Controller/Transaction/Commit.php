@@ -5,23 +5,23 @@ namespace Propultech\WebpayPlusMallRest\Controller\Transaction;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Framework\App\ObjectManager;
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\DB\Transaction as DbTransaction;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\App\ResourceConnection;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
 use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 use Magento\Sales\Model\Order\Invoice;
 use Magento\Sales\Model\Order\Payment\Transaction;
+use Magento\Sales\Model\OrderFactory;
 use Magento\Sales\Model\Service\InvoiceService;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
 use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRestFactory;
 use Propultech\WebpayPlusMallRest\Model\WebpayPlusMall;
-use Transbank\Webpay\Helper\PluginLogger;
+use Psr\Log\LoggerInterface;
 use Transbank\Webpay\WebpayPlus\Responses\MallTransactionCommitResponse;
 
 /**
@@ -37,9 +37,11 @@ class Commit extends Action
      * @param InvoiceSender $invoiceSender
      * @param InvoiceService $invoiceService
      * @param DbTransaction $dbTransaction
-     * @param PluginLogger $log
+     * @param ResourceConnection $resourceConnection
+     * @param LoggerInterface $log
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      * @param OrderRepositoryInterface $orderRepository
+     * @param OrderFactory $orderFactory
      */
     public function __construct(
         Context                                                $context,
@@ -50,9 +52,10 @@ class Commit extends Action
         private readonly InvoiceService                        $invoiceService,
         private readonly DbTransaction                         $dbTransaction,
         private readonly ResourceConnection                    $resourceConnection,
-        private readonly PluginLogger                          $log,
+        private readonly LoggerInterface                       $log,
         private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
-        private readonly OrderRepositoryInterface              $orderRepository
+        private readonly OrderRepositoryInterface              $orderRepository,
+        private readonly OrderFactory                          $orderFactory
     )
     {
         parent::__construct($context);
@@ -363,8 +366,7 @@ class Commit extends Action
     private function getOrderByIncrementId(string $incrementId): ?Order
     {
         try {
-            $objectManager = ObjectManager::getInstance();
-            return $objectManager->create(Order::class)->loadByIncrementId($incrementId);
+            return $this->orderFactory->create()->loadByIncrementId($incrementId);
         } catch (\Exception $e) {
             $this->log->logError('Error loading order by increment ID: ' . $e->getMessage());
             return null;
