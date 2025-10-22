@@ -46,7 +46,6 @@ class TransactionDetailsBuilder
         $commerceCodeGroups = [];
         $defaultCommerceCode = $this->getDefaultChildCommerceCode();
         $this->logger->logInfo('Default child commerce code resolved', ['code' => $defaultCommerceCode]);
-
         // Group items by commerce code (sum of item rows including tax)
         foreach ($items as $item) {
             try {
@@ -71,7 +70,31 @@ class TransactionDetailsBuilder
             }
         }
 
-        // If we couldn't group any item by commerce code, fallback to default commerce code with full grand total
+        // Always compute and assign shipping to the default commerce code
+        $shippingInclTax = (float)$order->getShippingInclTax();
+        $shippingDiscount = (float)$order->getShippingDiscountAmount();
+        $shippingNet = $shippingInclTax - $shippingDiscount; // net shipping charged to customer
+        $shippingNetInt = (int)round($shippingNet);
+        $this->logger->logInfo('Computed shipping amounts', [
+            'order' => $orderId,
+            'shipping_incl_tax' => (int)round($shippingInclTax),
+            'shipping_discount' => (int)round($shippingDiscount),
+            'shipping_net_int' => $shippingNetInt,
+            'default_commerce_code' => $defaultCommerceCode
+        ]);
+        if (!empty($defaultCommerceCode) && $shippingNetInt !== 0) {
+            if (!isset($commerceCodeGroups[$defaultCommerceCode])) {
+                $commerceCodeGroups[$defaultCommerceCode] = 0.0;
+            }
+            $commerceCodeGroups[$defaultCommerceCode] += (float)$shippingNetInt;
+            $this->logger->logInfo('Assigned shipping net to default commerce code group', [
+                'order' => $orderId,
+                'default_commerce_code' => $defaultCommerceCode,
+                'added_shipping' => $shippingNetInt
+            ]);
+        }
+
+        // If we couldn't group any item by commerce code and shipping didn't create a group, fallback to default commerce code with full grand total
         if (empty($commerceCodeGroups)) {
             if (!empty($defaultCommerceCode)) {
                 $this->logger->logInfo('No items grouped by commerce code. Falling back to default commerce code for full total', [
@@ -92,23 +115,24 @@ class TransactionDetailsBuilder
             throw new LocalizedException(__('No commerce codes available to build transaction details'));
         }
 
-        // Calculate proportional distribution of order-level adjustments (discounts, shipping, handling, etc.)
-        // We compute: adjustment = grand_total - sum(item_rows_incl_tax)
+        // Calculate proportional distribution of order-level adjustments (discounts, handling, etc.)
+        // We compute: adjustment = grand_total - sum(item_rows_incl_tax) - shippingNetInt
         $sumItems = 0.0;
         foreach ($commerceCodeGroups as $cc => $subtotal) {
             $sumItems += (float)$subtotal;
         }
-        $this->logger->logInfo('Grouped subtotals by commerce code', [
+        $this->logger->logInfo('Grouped subtotals by commerce code (after shipping allocation if any)', [
             'order' => $orderId,
             'groups' => $commerceCodeGroups,
             'sumItemsRounded' => (int)round($sumItems)
         ]);
 
-        $adjustment = (int)round($grandTotal) - (int)round($sumItems); // integer units (CLP)
-        $this->logger->logInfo('Computed order-level adjustment to distribute', [
+        $adjustment = (int)round($grandTotal) - (int)round($sumItems) - $shippingNetInt; // integer units (CLP)
+        $this->logger->logInfo('Computed order-level adjustment to distribute (excluding shipping)', [
             'order' => $orderId,
             'grandTotalRounded' => (int)round($grandTotal),
             'sumItemsRounded' => (int)round($sumItems),
+            'shippingNetInt' => $shippingNetInt,
             'adjustment' => (int)$adjustment
         ]);
 
