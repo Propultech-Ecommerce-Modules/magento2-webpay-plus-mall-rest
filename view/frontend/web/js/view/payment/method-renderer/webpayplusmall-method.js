@@ -1,19 +1,29 @@
 define(
     [
         'jquery',
+        'ko',
+        'mage/url',
+        'mage/translate',
         'Magento_Checkout/js/view/payment/default',
         'Magento_Checkout/js/action/place-order',
         'Magento_Checkout/js/model/payment/additional-validators',
-        'mage/url',
-        'Magento_Ui/js/modal/alert'
+        'Magento_Ui/js/modal/alert',
+        'Magento_Checkout/js/model/quote',
+        'Magento_Catalog/js/price-utils',
+        'Magento_Checkout/js/model/full-screen-loader'
     ],
     function (
         $,
+        ko,
+        url,
+        $t,
         Component,
         placeOrderAction,
         additionalValidators,
-        url,
-        alert
+        alert,
+        quote,
+        priceUtils,
+        fullScreenLoader
     ) {
         'use strict';
 
@@ -28,6 +38,23 @@ define(
              */
             getCode: function () {
                 return 'propultech_webpayplusmall';
+            },
+
+            /**
+             * Get payment method title
+             * @returns {String}
+             * Place order handler (Fintoc-style): places Magento order, then creates Webpay Mall transaction and redirects
+             */
+            getTitle: function () {
+                return window.checkoutConfig.payment.propultech_webpayplusmall.title;
+            },
+
+            /**
+             * Get payment method logo URL
+             * @returns {String}
+             */
+            getLogoUrl: function () {
+                return require.toUrl('Propultech_WebpayPlusMallRest/images/webpay-logo.svg');
             },
 
             /**
@@ -105,6 +132,15 @@ define(
             },
 
             /**
+             * Get formatted price
+             * @param {Number} price
+             * @returns {String}
+             */
+            getFormattedPrice: function (price) {
+                return priceUtils.formatPrice(price, quote.getPriceFormat());
+            },
+
+            /**
              * Get place order deferred object
              * @returns {*}
              */
@@ -123,6 +159,14 @@ define(
                     method: this.getCode(),
                     additional_data: {}
                 };
+            },
+
+            /**
+             * After place order callback
+             * @returns {void}
+             */
+            afterPlaceOrder: function () {
+                fullScreenLoader.startLoader();
             }
         });
     }
