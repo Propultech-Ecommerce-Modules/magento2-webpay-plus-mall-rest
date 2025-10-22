@@ -164,4 +164,16 @@ class ConfigProvider implements ConfigProviderInterface
             ScopeInterface::SCOPE_WEBSITES
         );
     }
+
+    /**
+     * Get shipping commerce code to which shipping must be allocated
+     */
+    public function getShippingCommerceCode(): string
+    {
+        $code = (string)$this->scopeConfig->getValue(
+            'payment/propultech_webpayplusmall/shipping_commerce_code',
+            ScopeInterface::SCOPE_WEBSITES
+        );
+        return trim($code);
+    }
 }

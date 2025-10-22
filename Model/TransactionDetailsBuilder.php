@@ -3,22 +3,21 @@
 namespace Propultech\WebpayPlusMallRest\Model;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
-use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
+use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
 
 class TransactionDetailsBuilder
 {
     /**
      * @param ProductRepositoryInterface $productRepository
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ConfigProvider $configProvider
      * @param LoggerInterface $logger
      */
     public function __construct(
         private ProductRepositoryInterface $productRepository,
-        private ScopeConfigInterface       $scopeConfig,
+        private ConfigProvider $configProvider,
         private readonly LoggerInterface   $logger
     )
     {
@@ -70,26 +69,30 @@ class TransactionDetailsBuilder
             }
         }
 
-        // Always compute and assign shipping to the default commerce code
+        // Always compute and assign shipping to the configured shipping commerce code (fallback to default)
         $shippingInclTax = (float)$order->getShippingInclTax();
         $shippingDiscount = (float)$order->getShippingDiscountAmount();
         $shippingNet = $shippingInclTax - $shippingDiscount; // net shipping charged to customer
         $shippingNetInt = (int)round($shippingNet);
+        $shippingCommerceCode = $this->getShippingCommerceCode();
+        $chosenShippingCode = !empty($shippingCommerceCode) ? $shippingCommerceCode : $defaultCommerceCode;
         $this->logger->logInfo('Computed shipping amounts', [
             'order' => $orderId,
             'shipping_incl_tax' => (int)round($shippingInclTax),
             'shipping_discount' => (int)round($shippingDiscount),
             'shipping_net_int' => $shippingNetInt,
+            'shipping_commerce_code_config' => $shippingCommerceCode,
+            'chosen_shipping_commerce_code' => $chosenShippingCode,
             'default_commerce_code' => $defaultCommerceCode
         ]);
-        if (!empty($defaultCommerceCode) && $shippingNetInt !== 0) {
-            if (!isset($commerceCodeGroups[$defaultCommerceCode])) {
-                $commerceCodeGroups[$defaultCommerceCode] = 0.0;
+        if (!empty($chosenShippingCode) && $shippingNetInt !== 0) {
+            if (!isset($commerceCodeGroups[$chosenShippingCode])) {
+                $commerceCodeGroups[$chosenShippingCode] = 0.0;
             }
-            $commerceCodeGroups[$defaultCommerceCode] += (float)$shippingNetInt;
-            $this->logger->logInfo('Assigned shipping net to default commerce code group', [
+            $commerceCodeGroups[$chosenShippingCode] += (float)$shippingNetInt;
+            $this->logger->logInfo('Assigned shipping net to commerce code group', [
                 'order' => $orderId,
-                'default_commerce_code' => $defaultCommerceCode,
+                'shipping_commerce_code' => $chosenShippingCode,
                 'added_shipping' => $shippingNetInt
             ]);
         }
@@ -262,33 +265,32 @@ class TransactionDetailsBuilder
     }
 
     /**
-     * Get default child commerce code from configuration
+     * Get default child commerce code from configuration via ConfigProvider
      *
      * @return string
      * @throws LocalizedException
      */
     private function getDefaultChildCommerceCode(): string
     {
-        $commerceCodesJson = $this->scopeConfig->getValue(
-            'payment/propultech_webpayplusmall/commerce_codes',
-            ScopeInterface::SCOPE_STORE
-        );
-
-        $commerceCodes = json_decode($commerceCodesJson ?? '[]', true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->logger->logError('Invalid JSON in commerce codes configuration', [
-                'raw' => (string)$commerceCodesJson,
-                'error' => json_last_error_msg()
-            ]);
+        $commerceCodes = $this->configProvider->getCommerceCodes();
+        if (!is_array($commerceCodes) || empty($commerceCodes)) {
+            $this->logger->logError('No default commerce code found in configuration');
+            throw new LocalizedException(__('No default commerce code found in configuration'));
         }
-        $first = is_array($commerceCodes) ? array_key_first($commerceCodes) : null;
-
-        if (!empty($commerceCodes) && is_array($commerceCodes) && isset($commerceCodes[$first]['commerce_code'])) {
-            $code = (string)$commerceCodes[$first]['commerce_code'];
-            return $code;
+        $firstKey = array_key_first($commerceCodes);
+        $firstRow = $commerceCodes[$firstKey] ?? null;
+        if (is_array($firstRow) && !empty($firstRow['commerce_code'])) {
+            return (string)$firstRow['commerce_code'];
         }
-
-        $this->logger->logError('No default commerce code found in configuration');
+        $this->logger->logError('No default commerce code found in configuration (missing commerce_code key)');
         throw new LocalizedException(__('No default commerce code found in configuration'));
+    }
+
+    /**
+     * Get shipping commerce code from configuration (optional)
+     */
+    private function getShippingCommerceCode(): string
+    {
+        return trim((string)$this->configProvider->getShippingCommerceCode());
     }
 }
