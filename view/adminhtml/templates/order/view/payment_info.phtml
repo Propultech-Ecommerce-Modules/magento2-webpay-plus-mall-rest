@@ -85,10 +85,11 @@ $title = $block->getData('title') ?: __('Payment Information (Webpay Plus Mall)'
                     </thead>
                     <tbody>
                     <?php foreach ($details as $row): ?>
+                        <?php $amount = number_format((float)$row['amount'] ?? '', 0, ',', '.') ?>
                         <tr>
                             <td><?= $block->escapeHtml((string)($row['child_buy_order'] ?? '')); ?></td>
                             <td><?= $block->escapeHtml((string)($row['commerce_code'] ?? '')); ?></td>
-                            <td><?= $block->escapeHtml((string)($row['amount'] ?? '')); ?></td>
+                            <td><?= $block->escapeHtml($amount); ?></td>
                             <td><?= $block->escapeHtml((string)($row['authorization_code'] ?? '')); ?></td>
                             <td><?= $block->escapeHtml((string)($row['payment_type_code'] ?? '')); ?></td>
                             <td><?= $block->escapeHtml((string)($row['installments_number'] ?? '')); ?></td>
