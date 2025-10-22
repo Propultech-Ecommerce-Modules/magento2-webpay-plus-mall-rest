@@ -35,17 +35,17 @@
     </type>
     <type name="Propultech\WebpayPlusMallRest\Controller\Transaction\Create">
         <arguments>
-            <argument name="logger" xsi:type="string">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
+            <argument name="logger" xsi:type="object">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
         </arguments>
     </type>
     <type name="Propultech\WebpayPlusMallRest\Controller\Transaction\Commit">
         <arguments>
-            <argument name="logger" xsi:type="string">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
+            <argument name="logger" xsi:type="object">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
         </arguments>
     </type>
     <type name="Propultech\WebpayPlusMallRest\Model\TransactionDetailsBuilder">
         <arguments>
-            <argument name="logger" xsi:type="string">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
+            <argument name="logger" xsi:type="object">Propultech\WebpayPlusMallRest\Logger\Logger</argument>
         </arguments>
     </type>
 </config>

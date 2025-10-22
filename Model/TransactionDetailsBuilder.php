@@ -5,8 +5,8 @@ namespace Propultech\WebpayPlusMallRest\Model;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
-use Psr\Log\LoggerInterface;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
+use Psr\Log\LoggerInterface;
 
 class TransactionDetailsBuilder
 {
@@ -16,9 +16,9 @@ class TransactionDetailsBuilder
      * @param LoggerInterface $logger
      */
     public function __construct(
-        private ProductRepositoryInterface $productRepository,
-        private ConfigProvider $configProvider,
-        private readonly LoggerInterface   $logger
+        private readonly ProductRepositoryInterface $productRepository,
+        private readonly ConfigProvider             $configProvider,
+        private readonly LoggerInterface            $logger
     )
     {
     }

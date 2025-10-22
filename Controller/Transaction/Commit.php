@@ -38,7 +38,7 @@ class Commit extends Action
      * @param InvoiceService $invoiceService
      * @param DbTransaction $dbTransaction
      * @param ResourceConnection $resourceConnection
-     * @param LoggerInterface $log
+     * @param LoggerInterface $logger
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      * @param OrderRepositoryInterface $orderRepository
      * @param OrderFactory $orderFactory
@@ -52,7 +52,7 @@ class Commit extends Action
         private readonly InvoiceService                        $invoiceService,
         private readonly DbTransaction                         $dbTransaction,
         private readonly ResourceConnection                    $resourceConnection,
-        private readonly LoggerInterface                       $log,
+        private readonly LoggerInterface                       $logger,
         private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
         private readonly OrderRepositoryInterface              $orderRepository,
         private readonly OrderFactory                          $orderFactory
@@ -69,7 +69,7 @@ class Commit extends Action
     public function execute()
     {
         $tokenWs = $this->getRequest()->getParam('token_ws');
-        $this->log->logInfo('Commit transaction with token: ' . ($tokenWs ?? 'null'));
+        $this->logger->logInfo('Commit transaction with token: ' . ($tokenWs ?? 'null'));
 
         if (empty($tokenWs)) {
             return $this->redirectToCartWithError(__('Invalid transaction token'));
@@ -82,7 +82,7 @@ class Commit extends Action
             ]);
 
             $commitResponse = $transbankSdkWebpay->commitTransaction($tokenWs);
-            $this->log->logInfo('Commit response: ' . json_encode($commitResponse));
+            $this->logger->logInfo('Commit response: ' . json_encode($commitResponse));
 
             if (isset($commitResponse->buyOrder)) {
                 $order = $this->getOrderByIncrementId($commitResponse->buyOrder);
@@ -106,13 +106,13 @@ class Commit extends Action
                 return $this->redirectToCartWithError(__('Invalid transaction response'));
             }
         } catch (NoSuchEntityException $e) {
-            $this->log->logError('NoSuchEntityException: ' . $e->getMessage());
+            $this->logger->logError('NoSuchEntityException: ' . $e->getMessage());
             return $this->redirectToCartWithError(__('Order not found'));
         } catch (LocalizedException $e) {
-            $this->log->logError('LocalizedException: ' . $e->getMessage());
+            $this->logger->logError('LocalizedException: ' . $e->getMessage());
             return $this->redirectToCartWithError(__($e->getMessage()));
         } catch (\Exception $e) {
-            $this->log->logError('Error in commit transaction: ' . $e->getMessage());
+            $this->logger->logError('Error in commit transaction: ' . $e->getMessage());
             return $this->redirectToCartWithError(__('Error processing payment: %1', $e->getMessage()));
         }
     }
@@ -218,7 +218,7 @@ class Commit extends Action
             try {
                 $order = $this->orderRepository->get($order->getId());
             } catch (\Exception $e) {
-                $this->log->logError('Error reloading order before email: ' . $e->getMessage());
+                $this->logger->logError('Error reloading order before email: ' . $e->getMessage());
             }
             $this->orderSender->send($order);
         }
@@ -312,7 +312,7 @@ class Commit extends Action
                 $connection->insertMultiple($table, $rows);
             }
         } catch (\Throwable $e) {
-            $this->log->logError('Error persisting webpay_mall_order_data: ' . $e->getMessage());
+            $this->logger->logError('Error persisting webpay_mall_order_data: ' . $e->getMessage());
         }
     }
 
@@ -353,7 +353,7 @@ class Commit extends Action
             $invoice->save();
             $this->invoiceSender->send($invoice);
         } catch (\Exception $e) {
-            $this->log->logError('Error creating invoice: ' . $e->getMessage());
+            $this->logger->logError('Error creating invoice: ' . $e->getMessage());
         }
     }
 
@@ -368,7 +368,7 @@ class Commit extends Action
         try {
             return $this->orderFactory->create()->loadByIncrementId($incrementId);
         } catch (\Exception $e) {
-            $this->log->logError('Error loading order by increment ID: ' . $e->getMessage());
+            $this->logger->logError('Error loading order by increment ID: ' . $e->getMessage());
             return null;
         }
     }
@@ -381,7 +381,7 @@ class Commit extends Action
         try {
             $this->checkoutSession->restoreQuote();
         } catch (\Exception $e) {
-            $this->log->logError('Error restoring quote: ' . $e->getMessage());
+            $this->logger->logError('Error restoring quote: ' . $e->getMessage());
         }
     }
 

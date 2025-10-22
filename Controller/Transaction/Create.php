@@ -2,6 +2,7 @@
 
 namespace Propultech\WebpayPlusMallRest\Controller\Transaction;
 
+use GuzzleHttp\Exception\GuzzleException;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
@@ -28,7 +29,7 @@ class Create extends Action
      * @param StoreManagerInterface $storeManager
      * @param ConfigProvider $configProvider
      * @param TransactionDetailsBuilder $transactionDetailsBuilder
-     * @param LoggerInterface $log
+     * @param LoggerInterface $logger
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      */
     public function __construct(
@@ -38,7 +39,7 @@ class Create extends Action
         private readonly StoreManagerInterface                 $storeManager,
         private readonly ConfigProvider                        $configProvider,
         private readonly TransactionDetailsBuilder             $transactionDetailsBuilder,
-        private readonly LoggerInterface                       $log,
+        private readonly LoggerInterface                       $logger,
         private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
     )
     {
@@ -49,7 +50,7 @@ class Create extends Action
      * Execute action based on request and return result
      *
      * @return ResultInterface
-     * @throws \Exception
+     * @throws \Exception|GuzzleException
      */
     public function execute()
     {
@@ -67,7 +68,7 @@ class Create extends Action
             $orderId = $order->getIncrementId();
             $grandTotal = (int)round($order->getGrandTotal());
 
-            $this->log->logInfo('Creating transaction for order: ' . $orderId . ', amount: ' . $grandTotal);
+            $this->logger->logInfo('Creating transaction for order: ' . $orderId . ', amount: ' . $grandTotal);
 
             $baseUrl = $this->storeManager->getStore()->getBaseUrl();
             $returnUrl = $baseUrl . $this->configProvider->getPluginConfig()['URL_RETURN'];
@@ -80,11 +81,11 @@ class Create extends Action
                 throw new LocalizedException(__('Could not build transaction details'));
             }
 
-            $this->log->logInfo('Transaction details: ' . json_encode($details));
+            $this->logger->logInfo('Transaction details: ' . json_encode($details));
 
             // Create transaction
             $transbankSdkWebpay = $this->transbankSdkFactory->create([
-                'logger' => $this->log,
+                'logger' => $this->logger,
                 'config' => $this->configProvider->getPluginConfig()
             ]);
 
@@ -100,15 +101,15 @@ class Create extends Action
                 );
             }
         } catch (LocalizedException $e) {
-            $this->log->logError('LocalizedException: ' . $e->getMessage());
+            $this->logger->logError('LocalizedException: ' . $e->getMessage());
             $response = ['error' => $e->getMessage()];
             $this->handleOrderError($order, $orderStatusCanceled, $e->getMessage());
         } catch (NoSuchEntityException $e) {
-            $this->log->logError('NoSuchEntityException: ' . $e->getMessage());
+            $this->logger->logError('NoSuchEntityException: ' . $e->getMessage());
             $response = ['error' => __('Store or entity not found')];
             $this->handleOrderError($order, $orderStatusCanceled, $e->getMessage());
         } catch (\Exception $e) {
-            $this->log->logError('Exception: ' . $e->getMessage());
+            $this->logger->logError('Exception: ' . $e->getMessage());
             $response = ['error' => __('Error creating transaction: %1', $e->getMessage())];
             $this->handleOrderError($order, $orderStatusCanceled, $e->getMessage());
         }
