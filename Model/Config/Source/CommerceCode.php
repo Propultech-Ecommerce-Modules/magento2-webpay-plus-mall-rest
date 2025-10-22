@@ -11,7 +11,7 @@ class CommerceCode extends AbstractSource
      * @param ConfigProvider $configProvider
      */
     public function __construct(
-        private ConfigProvider $configProvider
+        private readonly ConfigProvider $configProvider
     ) {
     }
 

@@ -104,10 +104,6 @@ class Create extends Action
             $this->logger->logError('LocalizedException: ' . $e->getMessage());
             $response = ['error' => $e->getMessage()];
             $this->handleOrderError($order, $orderStatusCanceled, $e->getMessage());
-        } catch (NoSuchEntityException $e) {
-            $this->logger->logError('NoSuchEntityException: ' . $e->getMessage());
-            $response = ['error' => __('Store or entity not found')];
-            $this->handleOrderError($order, $orderStatusCanceled, $e->getMessage());
         } catch (\Exception $e) {
             $this->logger->logError('Exception: ' . $e->getMessage());
             $response = ['error' => __('Error creating transaction: %1', $e->getMessage())];
