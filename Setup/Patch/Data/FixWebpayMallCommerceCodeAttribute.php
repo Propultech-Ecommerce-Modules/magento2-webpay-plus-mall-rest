@@ -4,7 +4,6 @@ namespace Propultech\WebpayPlusMallRest\Setup\Patch\Data;
 
 use Magento\Catalog\Model\Product;
 use Magento\Eav\Api\AttributeRepositoryInterface;
-use Magento\Eav\Api\Data\AttributeInterface;
 use Magento\Eav\Model\Entity\Attribute\Backend\ArrayBackend;
 use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
 use Magento\Eav\Setup\EavSetup;
@@ -12,48 +11,41 @@ use Magento\Eav\Setup\EavSetupFactory;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
+use Propultech\WebpayPlusMallRest\Model\Config\Source\CommerceCode;
 
 class FixWebpayMallCommerceCodeAttribute implements DataPatchInterface
 {
-    /**
-     * @param ModuleDataSetupInterface $moduleDataSetup
-     * @param EavSetupFactory $eavSetupFactory
-     * @param AttributeRepositoryInterface $attributeRepository
-     */
     public function __construct(
-        private readonly ModuleDataSetupInterface   $moduleDataSetup,
-        private readonly EavSetupFactory            $eavSetupFactory,
+        private readonly ModuleDataSetupInterface     $moduleDataSetup,
+        private readonly EavSetupFactory              $eavSetupFactory,
         private readonly AttributeRepositoryInterface $attributeRepository
     ) {
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function apply()
     {
         $this->moduleDataSetup->startSetup();
 
+        /** @var EavSetup $eavSetup */
         $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
 
-        // Ensure idempotency: remove existing attribute if it already exists
+        // Remove old attribute (if created without backend)
         if ($this->attributeExists('webpay_mall_commerce_code')) {
             $eavSetup->removeAttribute(Product::ENTITY, 'webpay_mall_commerce_code');
         }
 
-        // Recreate attribute
+        // Recreate: select with source for UI, but store raw value to accept CSV values directly
         $eavSetup->addAttribute(
             Product::ENTITY,
             'webpay_mall_commerce_code',
             [
                 'type' => 'varchar',
-                // store raw value (so CSV import saves provided code directly)
                 'backend' => ArrayBackend::class,
                 'frontend' => '',
                 'label' => 'Webpay Mall Commerce Code',
                 'input' => 'select',
                 'class' => '',
-                'source' => 'Propultech\WebpayPlusMallRest\Model\Config\Source\CommerceCode',
+                'source' => CommerceCode::class,
                 'global' => ScopedAttributeInterface::SCOPE_GLOBAL,
                 'visible' => true,
                 'required' => false,
@@ -72,40 +64,27 @@ class FixWebpayMallCommerceCodeAttribute implements DataPatchInterface
         );
 
         $this->moduleDataSetup->endSetup();
-
         return $this;
     }
 
-    /**
-     * Check if attribute exists for product entity.
-     */
-    private function attributeExists(string $attributeCode): bool
+    private function attributeExists(string $code): bool
     {
         try {
-            /** @var AttributeInterface $attr */
-            $attr = $this->attributeRepository->get(Product::ENTITY, $attributeCode);
-            return (bool)$attr->getAttributeId();
-        } catch (NoSuchEntityException $e) {
+            $this->attributeRepository->get(Product::ENTITY, $code);
+            return true;
+        } catch (NoSuchEntityException) {
             return false;
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getAliases()
     {
         return [];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public static function getDependencies()
     {
-        // If this patch must run after other setup data patches, list them here.
-        // Example:
-        // return [\Vendor\Module\Setup\Patch\Data\SomeDependencyPatch::class];
+        // Ensure this runs after the original attribute patch, so it can fix/replace it.
         return [AddWebpayMallCommerceCodeAttribute::class];
     }
 }
