@@ -119,19 +119,19 @@ class TransactionDetailsBuilder
         }
 
         // Calculate proportional distribution of order-level adjustments (discounts, handling, etc.)
-        // We compute: adjustment = grand_total - sum(item_rows_incl_tax) - shippingNetInt
+        // We compute: adjustment = grand_total - sum(grouped_subtotals) where grouped subtotals already include shipping (if any)
         $sumItems = 0.0;
         foreach ($commerceCodeGroups as $cc => $subtotal) {
             $sumItems += (float)$subtotal;
         }
-        $this->logger->logInfo('Grouped subtotals by commerce code (after shipping allocation if any)', [
+        $this->logger->logInfo('Grouped subtotals by commerce code (includes shipping if allocated)', [
             'order' => $orderId,
             'groups' => $commerceCodeGroups,
             'sumItemsRounded' => (int)round($sumItems)
         ]);
 
-        $adjustment = (int)round($grandTotal) - (int)round($sumItems) - $shippingNetInt; // integer units (CLP)
-        $this->logger->logInfo('Computed order-level adjustment to distribute (excluding shipping)', [
+        $adjustment = (int)round($grandTotal) - (int)round($sumItems); // integer units (CLP)
+        $this->logger->logInfo('Computed order-level adjustment to distribute', [
             'order' => $orderId,
             'grandTotalRounded' => (int)round($grandTotal),
             'sumItemsRounded' => (int)round($sumItems),
