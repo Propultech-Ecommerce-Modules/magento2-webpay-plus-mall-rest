@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!--
+  Plugin to append Webpay Mall commerce code under SKU in admin order view items list
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Sales\Block\Adminhtml\Items\Renderer\DefaultRenderer">
+        <plugin name="propultech_webpayplusmallrest_add_commerce_code_to_item_options"
+                type="Propultech\WebpayPlusMallRest\Plugin\Adminhtml\AddCommerceCodeToOrderItemOptions"
+                sortOrder="10"/>
+    </type>
+</config>
