@@ -58,3 +58,4 @@
 "Could not build transaction details","No se pudieron construir los detalles de la transacción"
 "Error creating transaction: %1","Error al crear la transacción: %1"
 "Unknown error occurred","Ocurrió un error desconocido"
+"Commerce Code","Código de Comercio"
