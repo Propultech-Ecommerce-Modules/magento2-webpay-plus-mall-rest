@@ -46,7 +46,7 @@ class CommerceCode extends AbstractSource
                 if (isset($row['commerce_name']) && isset($row['commerce_code'])) {
                     $options[] = [
                         'value' => $row['commerce_code'],
-                        'label' => $row['commerce_name'] . ' (' . $row['commerce_code'] . ')'
+                        'label' => $row['commerce_name']
                     ];
                 }
             }

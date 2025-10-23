@@ -4,6 +4,7 @@ namespace Propultech\WebpayPlusMallRest\Setup\Patch\Data;
 
 use Magento\Catalog\Model\Product;
 use Magento\Eav\Api\AttributeRepositoryInterface;
+use Magento\Eav\Model\Entity\Attribute\Backend\ArrayBackend;
 use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
 use Magento\Eav\Setup\EavSetup;
 use Magento\Eav\Setup\EavSetupFactory;
@@ -42,14 +43,14 @@ class RecreateWebpayMallCommerceCodeAttribute implements DataPatchInterface, Pat
             Product::ENTITY,
             'webpay_mall_commerce_code',
             [
-                'type' => 'int',
+                'type' => 'varchar',
                 'label' => 'Webpay Mall Commerce Code',
                 'input' => 'select',
                 'source' => CommerceCode::class,
                 'frontend' => '',
                 'required' => false,
-                'backend' => '',
-                'sort_order' => '30',
+                'backend' => ArrayBackend::class,
+                'sort_order' => '99',
                 'global' => ScopedAttributeInterface::SCOPE_GLOBAL,
                 'default' => null,
                 'visible' => true,
