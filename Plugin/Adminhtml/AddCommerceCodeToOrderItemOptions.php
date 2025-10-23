@@ -12,9 +12,10 @@ class AddCommerceCodeToOrderItemOptions
 {
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
-        private readonly LoggerInterface $logger,
-        private readonly Escaper $escaper
-    ) {
+        private readonly LoggerInterface            $logger,
+        private readonly Escaper                    $escaper
+    )
+    {
     }
 
     /**
@@ -48,9 +49,17 @@ class AddCommerceCodeToOrderItemOptions
                 return $result;
             }
 
+            // Resolve label (commerce name) from attribute source; fallback to code if empty
+            $label = $product->getAttributeText('webpay_mall_commerce_code');
+            $label = is_array($label) ? implode(', ', $label) : (string)$label;
+            $label = trim($label);
+            if ($label === '') {
+                $label = $code;
+            }
+
             // Build the snippet to append right after the product name and before closing container
             $ccHtml = '<div class="webpay-mall-commerce-code">'
-                . $this->escaper->escapeHtml($code)
+                . $this->escaper->escapeHtml(__('Commerce Name')) . ': ' . $this->escaper->escapeHtml($label)
                 . '</div>';
 
             // If the renderer wrapped the product column in a container, inject before the last closing </div>
