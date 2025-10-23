@@ -71,7 +71,7 @@ class Create extends Action
             $this->logger->logInfo('Creating transaction for order: ' . $orderId . ', amount: ' . $grandTotal);
 
             $baseUrl = $this->storeManager->getStore()->getBaseUrl();
-            $returnUrl = $baseUrl . $this->configProvider->getPluginConfig()['URL_RETURN'];
+            $returnUrl = $baseUrl . $this->configProvider->getPluginConfig()['URL_RETURN'] . '/order_id/' . $orderId;
             $buyOrder = $orderId;
             $sessionId = $order->getCustomerId() ? (string)$order->getCustomerId() : 'guest_' . time();
 

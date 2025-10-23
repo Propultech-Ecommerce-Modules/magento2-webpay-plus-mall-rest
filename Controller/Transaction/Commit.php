@@ -69,10 +69,12 @@ class Commit extends Action
     public function execute()
     {
         $tokenWs = $this->getRequest()->getParam('token_ws');
-        $this->logger->logInfo('Commit transaction with token: ' . ($tokenWs ?? 'null'));
+        $orderIdParam = $this->getRequest()->getParam('order_id');
+        $this->logger->logInfo('Commit transaction with token: ' . ($tokenWs ?? 'null') . ', order_id: ' . ($orderIdParam ?? 'null'));
 
         if (empty($tokenWs)) {
-            return $this->redirectToCartWithError(__('Invalid transaction token'));
+            $order = !empty($orderIdParam) ? $this->getOrderByIncrementId($orderIdParam) : null;
+            return $this->handleFailure($order, __('Payment was canceled or failed to start'), ['status' => 'CANCELED_BY_USER', 'message' => 'User canceled or left payment flow']);
         }
 
         try {
@@ -87,33 +89,31 @@ class Commit extends Action
             if (isset($commitResponse->buyOrder)) {
                 $order = $this->getOrderByIncrementId($commitResponse->buyOrder);
                 if (!$order || !$order->getId()) {
-                    throw new LocalizedException(__('Order not found for buyOrder: %1', $commitResponse->buyOrder));
+                    // fallback to order_id from params if available
+                    if (!empty($orderIdParam)) {
+                        $order = $this->getOrderByIncrementId($orderIdParam);
+                    }
+                    if (!$order || !$order->getId()) {
+                        throw new LocalizedException(__('Order not found for buyOrder: %1', $commitResponse->buyOrder));
+                    }
                 }
 
                 // Check if all details are approved
                 $allApproved = $this->areAllDetailsApproved($commitResponse);
 
                 if ($allApproved) {
-                    $this->processSuccessfulPayment($order, $commitResponse, $tokenWs);
-                    return $this->_redirect('checkout/onepage/success');
-                } else {
-                    $this->processFailedPayment($order, $commitResponse);
-                    return $this->redirectToCartWithError(__('Payment was not approved by the bank'));
+                    return $this->handleSuccess($order, $commitResponse, $tokenWs);
                 }
-            } else if (isset($commitResponse['error'])) {
-                return $this->redirectToCartWithError(__('Error: %1', $commitResponse['detail'] ?? $commitResponse['error']));
-            } else {
-                return $this->redirectToCartWithError(__('Invalid transaction response'));
+                return $this->handleFailure($order, __('Payment was not approved by the bank'), $commitResponse);
             }
-        } catch (NoSuchEntityException $e) {
-            $this->logger->logError('NoSuchEntityException: ' . $e->getMessage());
-            return $this->redirectToCartWithError(__('Order not found'));
-        } catch (LocalizedException $e) {
-            $this->logger->logError('LocalizedException: ' . $e->getMessage());
-            return $this->redirectToCartWithError(__($e->getMessage()));
-        } catch (\Exception $e) {
+
+            // Response without buyOrder
+            $fallbackOrder = !empty($orderIdParam) ? $this->getOrderByIncrementId($orderIdParam) : null;
+            return $this->handleFailure($fallbackOrder, __('Invalid transaction response'), $commitResponse);
+        } catch (\Throwable $e) {
             $this->logger->logError('Error in commit transaction: ' . $e->getMessage());
-            return $this->redirectToCartWithError(__('Error processing payment: %1', $e->getMessage()));
+            $order = !empty($orderIdParam) ? $this->getOrderByIncrementId($orderIdParam) : null;
+            return $this->handleFailure($order, __('Error processing payment: %1', $e->getMessage()), ['exception' => $e->getMessage()]);
         }
     }
 
@@ -136,6 +136,46 @@ class Commit extends Action
         }
 
         return true;
+    }
+
+    /**
+     * Centralized success handler: processes successful payment and redirects
+     */
+    private function handleSuccess(Order $order, MallTransactionCommitResponse $commitResponse, string $tokenWs): ResponseInterface
+    {
+        $this->processSuccessfulPayment($order, $commitResponse, $tokenWs);
+        return $this->_redirect('checkout/onepage/success');
+    }
+
+    /**
+     * Centralized failure handler: cancels order when available, then redirects to cart
+     * Every redirect to cart must cancel the current order (if resolvable)
+     *
+     * @param Order|null $order
+     * @param mixed $message
+     * @param mixed $context
+     * @return ResponseInterface
+     */
+    private function handleFailure(?Order $order, $message, $context = null): ResponseInterface
+    {
+        try {
+            if (!$order) {
+                $orderIdParam = $this->getRequest()->getParam('order_id');
+                if (!empty($orderIdParam)) {
+                    $order = $this->getOrderByIncrementId((string)$orderIdParam);
+                }
+            }
+
+            if ($order && $order->getId()) {
+                $this->processFailedPayment($order, $context ?? ['status' => 'FAILED']);
+            } else {
+                $this->logger->logInfo('No order to cancel on failure redirect (possibly manual trigger)');
+            }
+        } catch (\Throwable $e) {
+            $this->logger->logError('Error handling failure/cancelation: ' . $e->getMessage());
+        }
+
+        return $this->redirectToCartWithError($message);
     }
 
     /**
@@ -388,7 +428,7 @@ class Commit extends Action
     /**
      * Add error message, restore quote and redirect to cart
      */
-    private function redirectToCartWithError($message): \Magento\Framework\App\ResponseInterface
+    private function redirectToCartWithError($message): ResponseInterface
     {
         if ($message) {
             $this->messageManager->addErrorMessage($message);

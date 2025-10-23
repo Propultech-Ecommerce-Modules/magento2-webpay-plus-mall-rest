@@ -65,21 +65,6 @@ class ConfigProvider implements ConfigProviderInterface
     }
 
     /**
-     * Get plugin configuration
-     *
-     * @return array
-     */
-    public function getTbkPluginConfig()
-    {
-        return [
-            'ENVIRONMENT' => $this->scopeConfig->getValue('payment/transbank_webpay/environment', ScopeInterface::SCOPE_WEBSITES),
-            'COMMERCE_CODE' => $this->scopeConfig->getValue('payment/transbank_webpay/commerce_code', ScopeInterface::SCOPE_WEBSITES),
-            'API_KEY' => $this->scopeConfig->getValue('payment/transbank_webpay/api_key', ScopeInterface::SCOPE_WEBSITES),
-            'URL_RETURN' => 'transbank_webpay/transaction/commit',
-        ];
-    }
-
-    /**
      * Get commerce codes from configuration
      *
      * @return array
