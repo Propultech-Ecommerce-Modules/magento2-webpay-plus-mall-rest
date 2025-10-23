@@ -6,6 +6,7 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\DataObject;
 use Magento\Framework\Escaper;
 use Magento\Sales\Block\Adminhtml\Order\View\Items\Renderer\DefaultRenderer;
+use Propultech\WebpayPlusMallRest\Model\Config\Source\CommerceCode;
 use Psr\Log\LoggerInterface;
 
 class AddCommerceCodeToOrderItemOptions
@@ -13,7 +14,8 @@ class AddCommerceCodeToOrderItemOptions
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly LoggerInterface            $logger,
-        private readonly Escaper                    $escaper
+        private readonly Escaper                    $escaper,
+        private readonly CommerceCode               $commerceCodeSource
     )
     {
     }
@@ -54,7 +56,19 @@ class AddCommerceCodeToOrderItemOptions
             $label = is_array($label) ? implode(', ', $label) : (string)$label;
             $label = trim($label);
             if ($label === '') {
-                $label = $code;
+                try {
+                    $options = $this->commerceCodeSource->getAllOptions();
+                    if (is_array($options) && !empty($options)) {
+                        $first = reset($options);
+                        $firstLabel = is_array($first) && isset($first['label']) ? (string)$first['label'] : '';
+                        $firstLabel = trim($firstLabel);
+                        $label = $firstLabel !== '' ? $firstLabel : $code;
+                    } else {
+                        $label = $code;
+                    }
+                } catch (\Throwable $e) {
+                    $label = $code;
+                }
             }
 
             // Build the snippet to append right after the product name and before closing container
