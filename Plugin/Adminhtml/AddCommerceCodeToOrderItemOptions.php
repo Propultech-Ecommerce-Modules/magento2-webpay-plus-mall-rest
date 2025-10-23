@@ -11,6 +11,12 @@ use Psr\Log\LoggerInterface;
 
 class AddCommerceCodeToOrderItemOptions
 {
+    /**
+     * @param ProductRepositoryInterface $productRepository
+     * @param LoggerInterface $logger
+     * @param Escaper $escaper
+     * @param CommerceCode $commerceCodeSource
+     */
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly LoggerInterface            $logger,
@@ -45,23 +51,16 @@ class AddCommerceCodeToOrderItemOptions
             }
 
             $product = $this->productRepository->getById($productId);
-            $code = (string)$product->getData('webpay_mall_commerce_code');
-            $code = trim($code);
-            if ($code === '') {
-                return $result;
-            }
+            $code = trim((string)$product->getData('webpay_mall_commerce_code'));
 
             // Resolve label (commerce name) from attribute source; fallback to code if empty
             $label = $product->getAttributeText('webpay_mall_commerce_code');
-            $label = is_array($label) ? implode(', ', $label) : (string)$label;
-            $label = trim($label);
-            if ($label === '') {
+            $label = trim(is_array($label) ? implode(', ', $label) : (string)$label);
+            if (empty($code)) {
                 try {
                     $options = $this->commerceCodeSource->getAllOptions();
                     if (is_array($options) && !empty($options)) {
-                        $first = reset($options);
-                        $firstLabel = is_array($first) && isset($first['label']) ? (string)$first['label'] : '';
-                        $firstLabel = trim($firstLabel);
+                        $firstLabel = $options[1]['label'];
                         $label = $firstLabel !== '' ? $firstLabel : $code;
                     } else {
                         $label = $code;
