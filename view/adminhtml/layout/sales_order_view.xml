@@ -10,6 +10,14 @@
                     <argument name="title" xsi:type="string" translate="true">Payment Information (Webpay Plus Mall)</argument>
                 </arguments>
             </block>
+            <block class="Propultech\WebpayPlusMallRest\Block\Adminhtml\Order\View\PaymentInfo"
+                   name="propultech_webpayplusmall_admin_order_simplified_payment_info"
+                   template="Propultech_WebpayPlusMallRest::order/view/simplified_payment_info.phtml"
+                   ifconfig="payment/propultech_webpayplusmall/active">
+                <arguments>
+                    <argument name="title" xsi:type="string" translate="true">Transaction Summary</argument>
+                </arguments>
+            </block>
         </referenceBlock>
     </body>
 </page>

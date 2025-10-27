@@ -2,10 +2,9 @@
 
 namespace Propultech\WebpayPlusMallRest\Api;
 
-use Propultech\WebpayPlusMallRest\Api\Data\WebpayMallOrderDataInterface;
-use Magento\Framework\Api\SearchCriteriaInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Propultech\WebpayPlusMallRest\Api\Data\WebpayMallOrderDataInterface;
 
 /**
  * Interface WebpayMallOrderDataRepositoryInterface
@@ -26,25 +25,33 @@ interface WebpayMallOrderDataRepositoryInterface
      * Get WebpayMallOrderData by ID
      *
      * @param int $id
-     * @return WebpayMallOrderDataInterface
+     * @return array Array representing the transaction row
      * @throws NoSuchEntityException
      */
     public function getById($id);
 
     /**
-     * Get WebpayMallOrderData by Order ID and Quote ID
+     * Get WebpayMallOrderData rows by Order ID and Quote ID
      *
      * @param string $orderId
      * @param string $quoteId
-     * @return WebpayMallOrderDataInterface
+     * @return array[] List of rows (each row as an associative array)
      */
     public function getByOrderIdAndQuoteId($orderId, $quoteId);
 
     /**
-     * Get WebpayMallOrderData by Token
+     * Get WebpayMallOrderData rows by Order ID
+     *
+     * @param string $orderId
+     * @return array[] List of rows (each row as an associative array)
+     */
+    public function getByOrderId($orderId);
+
+    /**
+     * Get WebpayMallOrderData rows by Token
      *
      * @param string $token
-     * @return WebpayMallOrderDataInterface
+     * @return array[] List of rows (each row as an associative array)
      */
     public function getByToken($token);
 

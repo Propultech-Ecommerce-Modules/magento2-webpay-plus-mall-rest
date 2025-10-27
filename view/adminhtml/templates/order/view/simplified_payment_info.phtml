@@ -1,0 +1,34 @@
+<?php
+
+use Propultech\WebpayPlusMallRest\Block\Adminhtml\Order\View\PaymentInfo;
+
+/** @var PaymentInfo $block */
+
+$details = $block->getTransactions();
+$title = $block->getData('title');
+?>
+<div class="admin__fieldset-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $block->escapeHtml($title); ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <div class="admin__table-wrapper" style="margin-top: 10px;">
+            <table class="data-grid">
+                <thead>
+                <tr>
+                    <th><?= __('Commerce Name'); ?></th>
+                    <th><?= __('Authorization Code'); ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($details as $row): ?>
+                    <tr>
+                        <td><?= $block->escapeHtml((string)($row['commerce_name'] ?? '')); ?></td>
+                        <td><?= $block->escapeHtml((string)($row['authorization_code'] ?? '')); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,9 +1,9 @@
 <?php
-/** @var \Propultech\WebpayPlusMallRest\Block\Adminhtml\Order\View\PaymentInfo $block */
+/** @var PaymentInfo $block */
+
+use Propultech\WebpayPlusMallRest\Block\Adminhtml\Order\View\PaymentInfo;
+
 $order = $block->getOrder();
-if (!$order || !$block->isWebpayPlusMallOrder()) {
-    return; // Render nothing if not applicable
-}
 $info = $block->getPaymentInfo();
 if (!$info) {
     return;

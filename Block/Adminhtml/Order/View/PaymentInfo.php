@@ -8,17 +8,26 @@ use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Framework\Registry;
 use Magento\Sales\Model\Order;
+use Propultech\WebpayPlusMallRest\Api\WebpayMallOrderDataRepositoryInterface;
+use Propultech\WebpayPlusMallRest\Model\Config\Source\CommerceCode;
 use Propultech\WebpayPlusMallRest\Model\WebpayPlusMall;
 
 class PaymentInfo extends Template
 {
-    protected $_template = 'Propultech_WebpayPlusMallRest::order/view/payment_info.phtml';
-
+    /**
+     * @param Context $context
+     * @param Registry $registry
+     * @param WebpayMallOrderDataRepositoryInterface $repository
+     * @param array $data
+     */
     public function __construct(
-        Context $context,
-        private Registry $registry,
-        array $data = []
-    ) {
+        Context                                                 $context,
+        private Registry                                        $registry,
+        private readonly WebpayMallOrderDataRepositoryInterface $webpayMallOrderDataRepository,
+        private CommerceCode                                    $commerceCode,
+        array                                                   $data = []
+    )
+    {
         parent::__construct($context, $data);
     }
 
@@ -81,5 +90,36 @@ class PaymentInfo extends Template
         }
         $details = $info['details'] ?? [];
         return is_array($details) ? $details : [];
+    }
+
+    public function getTransactions()
+    {
+        $order = $this->getOrder();
+        $details = [];
+        try {
+            $transactions = $this->webpayMallOrderDataRepository->getByOrderId($order->getIncrementId());
+            foreach ($transactions as $transaction) {
+                $details[] = [
+                    'commerce_name' => $this->commerceCode->getOptionText($transaction->getCommerceCode()),
+                    'authorization_code' => $transaction->getAuthorizationCode(),
+                ];
+            }
+        } catch (\Throwable) {
+        }
+        return $details;
+    }
+
+
+    /**
+     * Converts the object to its HTML representation.
+     *
+     * @return string The HTML string if the order is a Webpay Plus Mall order, otherwise an empty string.
+     */
+    public function toHtml()
+    {
+        if (!$this->isWebpayPlusMallOrder()) {
+            return '';
+        }
+        return parent::toHtml();
     }
 }
