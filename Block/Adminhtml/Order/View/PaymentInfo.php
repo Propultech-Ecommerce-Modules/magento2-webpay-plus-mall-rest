@@ -17,7 +17,8 @@ class PaymentInfo extends Template
     /**
      * @param Context $context
      * @param Registry $registry
-     * @param WebpayMallOrderDataRepositoryInterface $repository
+     * @param WebpayMallOrderDataRepositoryInterface $webpayMallOrderDataRepository
+     * @param CommerceCode $commerceCode
      * @param array $data
      */
     public function __construct(
