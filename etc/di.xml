@@ -1,17 +1,25 @@
 <?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <preference for="Propultech\WebpayPlusMallRest\Api\WebpayMallOrderDataRepositoryInterface"
+    type="Propultech\WebpayPlusMallRest\Model\WebpayMallOrderDataRepository"/>
+
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
             <argument name="collections" xsi:type="array">
-                <item name="propultech_webpayplusmall_transactions_grid_data_source" xsi:type="string">Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData\Grid\Collection</item>
+                <item name="propultech_webpayplusmall_transactions_grid_data_source"
+                      xsi:type="string">Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
 
-    <virtualType name="Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData\Grid\Collection" type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+    <virtualType name="Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData\Grid\Collection"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
         <arguments>
             <argument name="mainTable" xsi:type="string">webpay_mall_order_data</argument>
-            <argument name="resourceModel" xsi:type="string">Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData</argument>
+            <argument name="resourceModel"
+                      xsi:type="string">Propultech\WebpayPlusMallRest\Model\ResourceModel\WebpayMallOrderData</argument>
         </arguments>
     </virtualType>
 
@@ -19,7 +27,8 @@
     <type name="Magento\Checkout\Model\CompositeConfigProvider">
         <arguments>
             <argument name="configProviders" xsi:type="array">
-                <item name="propultech_webpayplusmall_config_provider" xsi:type="object">Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider</item>
+                <item name="propultech_webpayplusmall_config_provider"
+                      xsi:type="object">Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider</item>
             </argument>
         </arguments>
     </type>
@@ -29,7 +38,8 @@
         <arguments>
             <argument name="name" xsi:type="string">webpaymall</argument>
             <argument name="handlers" xsi:type="array">
-                <item name="stream" xsi:type="object">Propultech\WebpayPlusMallRest\Logger\Handler\WebpayMallHandler</item>
+                <item name="stream"
+                      xsi:type="object">Propultech\WebpayPlusMallRest\Logger\Handler\WebpayMallHandler</item>
             </argument>
         </arguments>
     </type>

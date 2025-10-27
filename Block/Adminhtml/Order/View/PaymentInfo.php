@@ -102,9 +102,10 @@ class PaymentInfo extends Template
         try {
             $transactions = $this->webpayMallOrderDataRepository->getByOrderId($order->getIncrementId());
             foreach ($transactions as $transaction) {
+                $tbkStatus = json_decode($transaction['transbank_status'],true);
                 $details[] = [
-                    'commerce_name' => $this->commerceCode->getOptionText($transaction->getCommerceCode()),
-                    'authorization_code' => $transaction->getAuthorizationCode(),
+                    'commerce_name' => $this->commerceCode->getOptionText($transaction['child_commerce_code']),
+                    'authorization_code' => $tbkStatus['authorization_code'],
                 ];
             }
         } catch (\Throwable) {
