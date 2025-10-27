@@ -92,6 +92,9 @@ class PaymentInfo extends Template
         return is_array($details) ? $details : [];
     }
 
+    /**
+     * @return array
+     */
     public function getTransactions()
     {
         $order = $this->getOrder();
