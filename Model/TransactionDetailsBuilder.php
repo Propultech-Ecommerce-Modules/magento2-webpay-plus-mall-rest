@@ -69,30 +69,45 @@ class TransactionDetailsBuilder
             }
         }
 
-        // Always compute and assign shipping to the configured shipping commerce code (fallback to default)
+        // Compute shipping amount. Assign rules:
+        // - If multiple item commerce codes (>1): assign shipping to configured shipping commerce code (or default)
+        // - If exactly one item commerce code: assign shipping to that same commerce code
+        // - If no item groups (edge case): assign to configured shipping commerce code (or default)
         $shippingInclTax = (float)$order->getShippingInclTax();
         $shippingDiscount = (float)$order->getShippingDiscountAmount();
         $shippingNet = $shippingInclTax - $shippingDiscount; // net shipping charged to customer
         $shippingNetInt = (int)round($shippingNet);
         $shippingCommerceCode = $this->getShippingCommerceCode();
         $chosenShippingCode = !empty($shippingCommerceCode) ? $shippingCommerceCode : $defaultCommerceCode;
-        $this->logger->logInfo('Computed shipping amounts', [
+        $itemGroupsCount = count($commerceCodeGroups);
+        $shippingTargetCode = null;
+        if ($shippingNetInt !== 0) {
+            if ($itemGroupsCount > 1) {
+                $shippingTargetCode = $chosenShippingCode;
+            } elseif ($itemGroupsCount === 1) {
+                $shippingTargetCode = array_key_first($commerceCodeGroups);
+            } else {
+                $shippingTargetCode = $chosenShippingCode;
+            }
+        }
+        $this->logger->logInfo('Computed shipping amounts and selected target', [
             'order' => $orderId,
             'shipping_incl_tax' => (int)round($shippingInclTax),
             'shipping_discount' => (int)round($shippingDiscount),
             'shipping_net_int' => $shippingNetInt,
             'shipping_commerce_code_config' => $shippingCommerceCode,
-            'chosen_shipping_commerce_code' => $chosenShippingCode,
-            'default_commerce_code' => $defaultCommerceCode
+            'default_commerce_code' => $defaultCommerceCode,
+            'item_groups_count' => $itemGroupsCount,
+            'shipping_target_code' => $shippingTargetCode
         ]);
-        if (!empty($chosenShippingCode) && $shippingNetInt !== 0) {
-            if (!isset($commerceCodeGroups[$chosenShippingCode])) {
-                $commerceCodeGroups[$chosenShippingCode] = 0.0;
+        if (!empty($shippingTargetCode)) {
+            if (!isset($commerceCodeGroups[$shippingTargetCode])) {
+                $commerceCodeGroups[$shippingTargetCode] = 0.0;
             }
-            $commerceCodeGroups[$chosenShippingCode] += (float)$shippingNetInt;
+            $commerceCodeGroups[$shippingTargetCode] += (float)$shippingNetInt;
             $this->logger->logInfo('Assigned shipping net to commerce code group', [
                 'order' => $orderId,
-                'shipping_commerce_code' => $chosenShippingCode,
+                'shipping_commerce_code' => $shippingTargetCode,
                 'added_shipping' => $shippingNetInt
             ]);
         }
