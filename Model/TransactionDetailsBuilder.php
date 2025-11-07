@@ -69,13 +69,18 @@ class TransactionDetailsBuilder
             }
         }
 
+        $uniqueCommerceCode = false;
+        if (count($commerceCodeGroups) == 1) {
+            $uniqueCommerceCode = array_key_first($commerceCodeGroups);
+        }
+
         // Always compute and assign shipping to the configured shipping commerce code (fallback to default)
         $shippingInclTax = (float)$order->getShippingInclTax();
         $shippingDiscount = (float)$order->getShippingDiscountAmount();
         $shippingNet = $shippingInclTax - $shippingDiscount; // net shipping charged to customer
         $shippingNetInt = (int)round($shippingNet);
-        $shippingCommerceCode = $this->getShippingCommerceCode();
-        $chosenShippingCode = !empty($shippingCommerceCode) ? $shippingCommerceCode : $defaultCommerceCode;
+        $shippingCommerceCode = $this->getShippingCommerceCode() ?: $defaultCommerceCode;
+        $chosenShippingCode = $uniqueCommerceCode ?: $shippingCommerceCode;
         $this->logger->logInfo('Computed shipping amounts', [
             'order' => $orderId,
             'shipping_incl_tax' => (int)round($shippingInclTax),
