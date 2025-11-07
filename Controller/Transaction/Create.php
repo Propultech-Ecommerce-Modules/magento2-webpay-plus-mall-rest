@@ -2,22 +2,20 @@
 
 namespace Propultech\WebpayPlusMallRest\Controller\Transaction;
 
+use GuzzleHttp\Exception\GuzzleException;
+use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Quote\Model\QuoteManagement;
 use Magento\Sales\Model\Order;
 use Magento\Store\Model\StoreManagerInterface;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
-use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRest;
-use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRestFactory;
 use Propultech\WebpayPlusMallRest\Model\TransactionDetailsBuilder;
-use Propultech\WebpayPlusMallRest\Model\WebpayPlusMall;
-use Transbank\Webpay\Helper\PluginLogger;
+use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRestFactory;
+use Psr\Log\LoggerInterface;
 
 /**
  * Controller for creating Webpay Plus Mall transactions.
@@ -28,24 +26,23 @@ class Create extends Action
      * @param Context $context
      * @param CheckoutSession $checkoutSession
      * @param JsonFactory $resultJsonFactory
-     * @param QuoteManagement $quoteManagement
      * @param StoreManagerInterface $storeManager
      * @param ConfigProvider $configProvider
      * @param TransactionDetailsBuilder $transactionDetailsBuilder
-     * @param PluginLogger $log
+     * @param LoggerInterface $logger
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      */
     public function __construct(
-        Context $context,
-        private CheckoutSession $checkoutSession,
-        private JsonFactory $resultJsonFactory,
-        private QuoteManagement $quoteManagement,
-        private StoreManagerInterface $storeManager,
-        private ConfigProvider $configProvider,
-        private TransactionDetailsBuilder $transactionDetailsBuilder,
-        private PluginLogger $log,
-        private TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
-    ) {
+        Context                                                $context,
+        private readonly CheckoutSession                       $checkoutSession,
+        private readonly JsonFactory                           $resultJsonFactory,
+        private readonly StoreManagerInterface                 $storeManager,
+        private readonly ConfigProvider                        $configProvider,
+        private readonly TransactionDetailsBuilder             $transactionDetailsBuilder,
+        private readonly LoggerInterface                       $logger,
+        private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
+    )
+    {
         parent::__construct($context);
     }
 
@@ -53,8 +50,9 @@ class Create extends Action
      * Execute action based on request and return result
      *
      * @return ResultInterface
+     * @throws \Exception|GuzzleException
      */
-    public function execute(): ResultInterface
+    public function execute()
     {
         $response = null;
         $order = null;
@@ -70,10 +68,10 @@ class Create extends Action
             $orderId = $order->getIncrementId();
             $grandTotal = (int)round($order->getGrandTotal());
 
-            $this->log->logInfo('Creating transaction for order: ' . $orderId . ', amount: ' . $grandTotal);
+            $this->logger->logInfo('Creating transaction for order: ' . $orderId . ', amount: ' . $grandTotal);
 
             $baseUrl = $this->storeManager->getStore()->getBaseUrl();
-            $returnUrl = $baseUrl . $this->configProvider->getPluginConfig()['URL_RETURN'];
+            $returnUrl = $baseUrl . $this->configProvider->getPluginConfig()['URL_RETURN'] . '/order_id/' . $orderId;
             $buyOrder = $orderId;
             $sessionId = $order->getCustomerId() ? (string)$order->getCustomerId() : 'guest_' . time();
 
@@ -83,11 +81,11 @@ class Create extends Action
                 throw new LocalizedException(__('Could not build transaction details'));
             }
 
-            $this->log->logInfo('Transaction details: ' . json_encode($details));
+            $this->logger->logInfo('Transaction details: ' . json_encode($details));
 
             // Create transaction
             $transbankSdkWebpay = $this->transbankSdkFactory->create([
-                'logger' => $this->log,
+                'logger' => $this->logger,
                 'config' => $this->configProvider->getPluginConfig()
             ]);
 
@@ -103,15 +101,11 @@ class Create extends Action
                 );
             }
         } catch (LocalizedException $e) {
-            $this->log->logError('LocalizedException: ' . $e->getMessage());
+            $this->logger->logError('LocalizedException: ' . $e->getMessage());
             $response = ['error' => $e->getMessage()];
             $this->handleOrderError($order, $orderStatusCanceled, $e->getMessage());
-        } catch (NoSuchEntityException $e) {
-            $this->log->logError('NoSuchEntityException: ' . $e->getMessage());
-            $response = ['error' => __('Store or entity not found')];
-            $this->handleOrderError($order, $orderStatusCanceled, $e->getMessage());
         } catch (\Exception $e) {
-            $this->log->logError('Exception: ' . $e->getMessage());
+            $this->logger->logError('Exception: ' . $e->getMessage());
             $response = ['error' => __('Error creating transaction: %1', $e->getMessage())];
             $this->handleOrderError($order, $orderStatusCanceled, $e->getMessage());
         }
@@ -129,6 +123,7 @@ class Create extends Action
      * @param string $status
      * @param string $message
      * @return void
+     * @throws \Exception
      */
     private function updateOrderStatus(Order $order, string $status, string $message): void
     {
@@ -144,6 +139,7 @@ class Create extends Action
      * @param string $status
      * @param string $message
      * @return void
+     * @throws \Exception
      */
     private function cancelOrder(Order $order, string $status, string $message): void
     {
@@ -160,6 +156,7 @@ class Create extends Action
      * @param string $errorStatus
      * @param string $errorMessage
      * @return void
+     * @throws \Exception
      */
     private function handleOrderError(?Order $order, string $errorStatus, string $errorMessage): void
     {

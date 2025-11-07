@@ -2,25 +2,26 @@
 
 namespace Propultech\WebpayPlusMallRest\Controller\Transaction;
 
+use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Checkout\Model\Session as CheckoutSession;
-use Magento\Framework\Controller\ResultInterface;
+use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\DB\Transaction as DbTransaction;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\View\Result\PageFactory;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
-use Magento\Sales\Model\Order\Payment\Transaction;
-use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 use Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
+use Magento\Sales\Model\Order\Email\Sender\OrderSender;
+use Magento\Sales\Model\Order\Invoice;
+use Magento\Sales\Model\Order\Payment\Transaction;
+use Magento\Sales\Model\OrderFactory;
 use Magento\Sales\Model\Service\InvoiceService;
-use Magento\Framework\DB\Transaction as DbTransaction;
 use Propultech\WebpayPlusMallRest\Model\Config\ConfigProvider;
-use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRest;
 use Propultech\WebpayPlusMallRest\Model\TransbankSdkWebpayPlusMallRestFactory;
 use Propultech\WebpayPlusMallRest\Model\WebpayPlusMall;
-use Transbank\Webpay\Helper\PluginLogger;
+use Psr\Log\LoggerInterface;
 use Transbank\Webpay\WebpayPlus\Responses\MallTransactionCommitResponse;
 
 /**
@@ -31,92 +32,88 @@ class Commit extends Action
     /**
      * @param Context $context
      * @param CheckoutSession $checkoutSession
-     * @param PageFactory $resultPageFactory
      * @param ConfigProvider $configProvider
      * @param OrderSender $orderSender
      * @param InvoiceSender $invoiceSender
      * @param InvoiceService $invoiceService
      * @param DbTransaction $dbTransaction
-     * @param PluginLogger $log
+     * @param ResourceConnection $resourceConnection
+     * @param LoggerInterface $logger
      * @param TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory
      * @param OrderRepositoryInterface $orderRepository
+     * @param OrderFactory $orderFactory
      */
     public function __construct(
-        Context $context,
-        private CheckoutSession $checkoutSession,
-        private PageFactory $resultPageFactory,
-        private ConfigProvider $configProvider,
-        private OrderSender $orderSender,
-        private InvoiceSender $invoiceSender,
-        private InvoiceService $invoiceService,
-        private DbTransaction $dbTransaction,
-        private PluginLogger $log,
-        private TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
-        private OrderRepositoryInterface $orderRepository
-    ) {
+        Context                                                $context,
+        private readonly CheckoutSession                       $checkoutSession,
+        private readonly ConfigProvider                        $configProvider,
+        private readonly OrderSender                           $orderSender,
+        private readonly InvoiceSender                         $invoiceSender,
+        private readonly InvoiceService                        $invoiceService,
+        private readonly DbTransaction                         $dbTransaction,
+        private readonly ResourceConnection                    $resourceConnection,
+        private readonly LoggerInterface                       $logger,
+        private readonly TransbankSdkWebpayPlusMallRestFactory $transbankSdkFactory,
+        private readonly OrderRepositoryInterface              $orderRepository,
+        private readonly OrderFactory                          $orderFactory
+    )
+    {
         parent::__construct($context);
     }
 
     /**
      * Execute action based on request and return result
      *
-     * @return ResultInterface
+     * @return ResponseInterface
      */
-    public function execute(): ResultInterface
+    public function execute()
     {
         $tokenWs = $this->getRequest()->getParam('token_ws');
-        $this->log->logInfo('Commit transaction with token: ' . ($tokenWs ?? 'null'));
+        $orderIdParam = $this->getRequest()->getParam('order_id');
+        $this->logger->logInfo('Commit transaction with token: ' . ($tokenWs ?? 'null') . ', order_id: ' . ($orderIdParam ?? 'null'));
 
         if (empty($tokenWs)) {
-            $this->messageManager->addErrorMessage(__('Invalid transaction token'));
-            return $this->_redirect('checkout/cart');
+            $order = !empty($orderIdParam) ? $this->getOrderByIncrementId($orderIdParam) : null;
+            return $this->handleFailure($order, __('Payment was canceled or failed to start'), ['status' => 'CANCELED_BY_USER', 'message' => 'User canceled or left payment flow']);
         }
 
         try {
             $transbankSdkWebpay = $this->transbankSdkFactory->create([
-                'logger' => $this->log,
+                'logger' => $this->logger,
                 'config' => $this->configProvider->getPluginConfig()
             ]);
 
             $commitResponse = $transbankSdkWebpay->commitTransaction($tokenWs);
-            $this->log->logInfo('Commit response: ' . json_encode($commitResponse));
+            $this->logger->logInfo('Commit response: ' . json_encode($commitResponse));
 
             if (isset($commitResponse->buyOrder)) {
                 $order = $this->getOrderByIncrementId($commitResponse->buyOrder);
                 if (!$order || !$order->getId()) {
-                    throw new LocalizedException(__('Order not found for buyOrder: %1', $commitResponse->buyOrder));
+                    // fallback to order_id from params if available
+                    if (!empty($orderIdParam)) {
+                        $order = $this->getOrderByIncrementId($orderIdParam);
+                    }
+                    if (!$order || !$order->getId()) {
+                        throw new LocalizedException(__('Order not found for buyOrder: %1', $commitResponse->buyOrder));
+                    }
                 }
 
                 // Check if all details are approved
                 $allApproved = $this->areAllDetailsApproved($commitResponse);
 
                 if ($allApproved) {
-                    $this->processSuccessfulPayment($order, $commitResponse);
-                    return $this->_redirect('checkout/onepage/success');
-                } else {
-                    $this->processFailedPayment($order, $commitResponse);
-                    $this->messageManager->addErrorMessage(__('Payment was not approved by the bank'));
-                    return $this->_redirect('checkout/cart');
+                    return $this->handleSuccess($order, $commitResponse, $tokenWs);
                 }
-            } else if (isset($commitResponse['error'])) {
-                $this->messageManager->addErrorMessage(__('Error: %1', $commitResponse['detail'] ?? $commitResponse['error']));
-                return $this->_redirect('checkout/cart');
-            } else {
-                $this->messageManager->addErrorMessage(__('Invalid transaction response'));
-                return $this->_redirect('checkout/cart');
+                return $this->handleFailure($order, __('Payment was not approved by the bank'), $commitResponse);
             }
-        } catch (LocalizedException $e) {
-            $this->log->logError('LocalizedException: ' . $e->getMessage());
-            $this->messageManager->addErrorMessage($e->getMessage());
-            return $this->_redirect('checkout/cart');
-        } catch (NoSuchEntityException $e) {
-            $this->log->logError('NoSuchEntityException: ' . $e->getMessage());
-            $this->messageManager->addErrorMessage(__('Order not found'));
-            return $this->_redirect('checkout/cart');
-        } catch (\Exception $e) {
-            $this->log->logError('Error in commit transaction: ' . $e->getMessage());
-            $this->messageManager->addErrorMessage(__('Error processing payment: %1', $e->getMessage()));
-            return $this->_redirect('checkout/cart');
+
+            // Response without buyOrder
+            $fallbackOrder = !empty($orderIdParam) ? $this->getOrderByIncrementId($orderIdParam) : null;
+            return $this->handleFailure($fallbackOrder, __('Invalid transaction response'), $commitResponse);
+        } catch (\Throwable $e) {
+            $this->logger->logError('Error in commit transaction: ' . $e->getMessage());
+            $order = !empty($orderIdParam) ? $this->getOrderByIncrementId($orderIdParam) : null;
+            return $this->handleFailure($order, __('Error processing payment: %1', $e->getMessage()), ['exception' => $e->getMessage()]);
         }
     }
 
@@ -142,23 +139,103 @@ class Commit extends Action
     }
 
     /**
+     * Centralized success handler: processes successful payment and redirects
+     */
+    private function handleSuccess(Order $order, MallTransactionCommitResponse $commitResponse, string $tokenWs): ResponseInterface
+    {
+        $this->processSuccessfulPayment($order, $commitResponse, $tokenWs);
+        return $this->_redirect('checkout/onepage/success');
+    }
+
+    /**
+     * Centralized failure handler: cancels order when available, then redirects to cart
+     * Every redirect to cart must cancel the current order (if resolvable)
+     *
+     * @param Order|null $order
+     * @param mixed $message
+     * @param mixed $context
+     * @return ResponseInterface
+     */
+    private function handleFailure(?Order $order, $message, $context = null): ResponseInterface
+    {
+        try {
+            if (!$order) {
+                $orderIdParam = $this->getRequest()->getParam('order_id');
+                if (!empty($orderIdParam)) {
+                    $order = $this->getOrderByIncrementId((string)$orderIdParam);
+                }
+            }
+
+            if ($order && $order->getId()) {
+                $this->processFailedPayment($order, $context ?? ['status' => 'FAILED']);
+            } else {
+                $this->logger->logInfo('No order to cancel on failure redirect (possibly manual trigger)');
+            }
+        } catch (\Throwable $e) {
+            $this->logger->logError('Error handling failure/cancelation: ' . $e->getMessage());
+        }
+
+        return $this->redirectToCartWithError($message);
+    }
+
+    /**
      * Process successful payment
      *
      * @param Order $order
      * @param MallTransactionCommitResponse $commitResponse
+     * @param string $tokenWs
      * @return void
      */
-    private function processSuccessfulPayment(Order $order, MallTransactionCommitResponse $commitResponse): void
+    private function processSuccessfulPayment(Order $order, MallTransactionCommitResponse $commitResponse, string $tokenWs): void
     {
         $orderStatusSuccess = $this->configProvider->getOrderSuccessStatus();
         $message = "<h3>Pago exitoso con Webpay Plus Mall</h3><br>" . json_encode($commitResponse);
 
         // Set payment information
         $payment = $order->getPayment();
-        $payment->setLastTransId($commitResponse->details[0]->authorizationCode);
-        $payment->setTransactionId($commitResponse->details[0]->authorizationCode);
-        $payment->setAdditionalInformation([Transaction::RAW_DETAILS => (array) $commitResponse]);
+        $firstDetail = $commitResponse->details[0] ?? null;
+        if ($firstDetail && isset($firstDetail->authorizationCode)) {
+            $payment->setLastTransId($firstDetail->authorizationCode);
+            $payment->setTransactionId($firstDetail->authorizationCode);
+        }
         $payment->setMethod(WebpayPlusMall::CODE);
+
+        // Build additional information (non-sensitive)
+        $cardNumber = $commitResponse->cardNumber ?? null;
+        $last4 = $cardNumber ? substr(preg_replace('/\D/', '', (string)$cardNumber), -4) : null;
+
+        $details = [];
+        if (!empty($commitResponse->details) && is_array($commitResponse->details)) {
+            foreach ($commitResponse->details as $d) {
+                $details[] = [
+                    'commerce_code' => $d->commerceCode ?? null,
+                    'child_buy_order' => $d->buyOrder ?? null,
+                    'amount' => $d->amount ?? null,
+                    'authorization_code' => $d->authorizationCode ?? null,
+                    'payment_type_code' => $d->paymentTypeCode ?? null,
+                    'response_code' => $d->responseCode ?? null,
+                    'installments_number' => $d->installmentsNumber ?? null,
+                    'status' => $d->status ?? null,
+                ];
+            }
+        }
+
+        $additional = [
+            'token_ws' => $tokenWs,
+            'buy_order' => $commitResponse->buyOrder ?? $order->getIncrementId(),
+            'session_id' => $commitResponse->sessionId ?? null,
+            'transaction_date' => $commitResponse->transactionDate ?? null,
+            'accounting_date' => $commitResponse->accountingDate ?? null,
+            'vci' => $commitResponse->vci ?? null,
+            'card' => [
+                'last4' => $last4,
+            ],
+            'details' => $details,
+        ];
+
+        // Persist additional information keys individually to avoid overwriting
+        $payment->setAdditionalInformation('webpayplusmall', $additional);
+        $payment->setAdditionalInformation(Transaction::RAW_DETAILS, json_encode($commitResponse));
 
         // Set order status
         $order->setState(\Magento\Sales\Model\Order::STATE_PROCESSING);
@@ -166,16 +243,25 @@ class Commit extends Action
         $order->addStatusToHistory($order->getStatus(), $message);
 
         // Create invoice if configured
-        if ($this->configProvider->getInvoiceSettings() === 'automatic' && $order->canInvoice()) {
+        if ($this->configProvider->getInvoiceSettings() === 'transbank' && $order->canInvoice()) {
             $this->createInvoice($order);
         }
 
-        // Send email if configured
+        // Persist transaction rows
+        $this->persistTransactionData($order, $commitResponse, $tokenWs, $additional);
+
+        // Save order before sending email
+        $this->orderRepository->save($order);
+
+        // Send email if configured (after save)
         if ($this->configProvider->getEmailBehavior() === 'after_payment') {
+            try {
+                $order = $this->orderRepository->get($order->getId());
+            } catch (\Exception $e) {
+                $this->logger->logError('Error reloading order before email: ' . $e->getMessage());
+            }
             $this->orderSender->send($order);
         }
-
-        $this->orderRepository->save($order);
 
         // Set checkout session data
         $this->checkoutSession->setLastQuoteId($order->getQuoteId());
@@ -183,6 +269,91 @@ class Commit extends Action
         $this->checkoutSession->setLastOrderId($order->getId());
         $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
         $this->checkoutSession->setLastOrderStatus($order->getStatus());
+    }
+
+    /**
+     * Persist transaction rows into webpay_mall_order_data table
+     *
+     * @param Order $order
+     * @param MallTransactionCommitResponse $commitResponse
+     * @param string $tokenWs
+     * @param array $metadata
+     */
+    private function persistTransactionData(Order $order, MallTransactionCommitResponse $commitResponse, string $tokenWs, array $metadata): void
+    {
+        try {
+            $connection = $this->resourceConnection->getConnection();
+            $table = $this->resourceConnection->getTableName('webpay_mall_order_data');
+
+            $buyOrder = (string)($commitResponse->buyOrder ?? $order->getIncrementId());
+            $sessionId = (string)($commitResponse->sessionId ?? '');
+            $quoteId = (string)$order->getQuoteId();
+            $product = WebpayPlusMall::PRODUCT_NAME;
+            $environment = (string)($this->configProvider->getPluginConfig()['ENVIRONMENT'] ?? '');
+
+            $commerceCodes = [];
+            if (!empty($commitResponse->details) && is_array($commitResponse->details)) {
+                foreach ($commitResponse->details as $d) {
+                    if (isset($d->commerceCode)) {
+                        $commerceCodes[] = (string)$d->commerceCode;
+                    }
+                }
+            }
+            $commerceCodesJson = json_encode($commerceCodes);
+
+            // Prevent duplicates for the same token
+            $connection->delete($table, ['token = ?' => substr($tokenWs, 0, 100)]);
+
+            $rows = [];
+            if (!empty($commitResponse->details) && is_array($commitResponse->details)) {
+                foreach ($commitResponse->details as $d) {
+                    $rows[] = [
+                        'order_id' => substr((string)$order->getIncrementId(), 0, 60),
+                        'buy_order' => substr($buyOrder, 0, 20),
+                        'child_buy_order' => substr((string)($d->buyOrder ?? ''), 0, 20),
+                        'commerce_codes' => $commerceCodesJson ?: '[]',
+                        'child_commerce_code' => substr((string)($d->commerceCode ?? ''), 0, 60),
+                        'amount' => (int)($d->amount ?? 0),
+                        'token' => substr($tokenWs, 0, 100),
+                        'transbank_status' => json_encode([
+                            'status' => $d->status ?? null,
+                            'response_code' => $d->responseCode ?? null,
+                            'authorization_code' => $d->authorizationCode ?? null,
+                        ]),
+                        'session_id' => substr($sessionId, 0, 20),
+                        'quote_id' => substr($quoteId, 0, 20),
+                        'payment_status' => 'APPROVED',
+                        'metadata' => json_encode($metadata),
+                        'product' => substr($product, 0, 50),
+                        'environment' => substr($environment, 0, 50),
+                    ];
+                }
+            } else {
+                // Fallback single row if no details present
+                $rows[] = [
+                    'order_id' => substr((string)$order->getIncrementId(), 0, 60),
+                    'buy_order' => substr($buyOrder, 0, 20),
+                    'child_buy_order' => substr($buyOrder, 0, 20),
+                    'commerce_codes' => $commerceCodesJson ?: '[]',
+                    'child_commerce_code' => substr((string)($this->configProvider->getPluginConfig()['COMMERCE_CODE'] ?? ''), 0, 60),
+                    'amount' => (int)round((float)$order->getGrandTotal()),
+                    'token' => substr($tokenWs, 0, 100),
+                    'transbank_status' => json_encode(['status' => 'APPROVED']),
+                    'session_id' => substr($sessionId, 0, 20),
+                    'quote_id' => substr($quoteId, 0, 20),
+                    'payment_status' => 'APPROVED',
+                    'metadata' => json_encode($metadata),
+                    'product' => substr($product, 0, 50),
+                    'environment' => substr($environment, 0, 50),
+                ];
+            }
+
+            if (!empty($rows)) {
+                $connection->insertMultiple($table, $rows);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->logError('Error persisting webpay_mall_order_data: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -213,14 +384,16 @@ class Commit extends Action
     {
         try {
             $invoice = $this->invoiceService->prepareInvoice($order);
-            $invoice->setRequestedCaptureCase(\Magento\Sales\Model\Order\Invoice::CAPTURE_ONLINE);
+            $invoice->setRequestedCaptureCase(Invoice::CAPTURE_ONLINE);
             $invoice->register();
             $invoice->getOrder()->setCustomerNoteNotify(false);
             $invoice->getOrder()->setIsInProcess(true);
             $this->dbTransaction->addObject($invoice)->addObject($invoice->getOrder())->save();
+            $invoice->pay();
+            $invoice->save();
             $this->invoiceSender->send($invoice);
         } catch (\Exception $e) {
-            $this->log->logError('Error creating invoice: ' . $e->getMessage());
+            $this->logger->logError('Error creating invoice: ' . $e->getMessage());
         }
     }
 
@@ -233,20 +406,34 @@ class Commit extends Action
     private function getOrderByIncrementId(string $incrementId): ?Order
     {
         try {
-            $searchCriteria = $this->_objectManager->create(
-                \Magento\Framework\Api\SearchCriteriaBuilder::class
-            )->addFilter('increment_id', $incrementId, 'eq')
-                ->create();
-
-            $orderList = $this->orderRepository->getList($searchCriteria);
-            if ($orderList->getTotalCount()) {
-                return $orderList->getItems()[0];
-            }
-
-            return null;
+            return $this->orderFactory->create()->loadByIncrementId($incrementId);
         } catch (\Exception $e) {
-            $this->log->logError('Error loading order by increment ID: ' . $e->getMessage());
+            $this->logger->logError('Error loading order by increment ID: ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Restore the customer's quote to the session
+     */
+    private function restoreQuote(): void
+    {
+        try {
+            $this->checkoutSession->restoreQuote();
+        } catch (\Exception $e) {
+            $this->logger->logError('Error restoring quote: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Add error message, restore quote and redirect to cart
+     */
+    private function redirectToCartWithError($message): ResponseInterface
+    {
+        if ($message) {
+            $this->messageManager->addErrorMessage($message);
+        }
+        $this->restoreQuote();
+        return $this->_redirect('checkout/cart');
     }
 }

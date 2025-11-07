@@ -4,8 +4,8 @@ namespace Propultech\WebpayPlusMallRest\Model;
 
 class WebpayPlusMall extends \Magento\Payment\Model\Method\AbstractMethod
 {
-    const CODE = 'propultech_webpayplusmall';
-    const PRODUCT_NAME = 'webpay_plus_mall';
+    public const CODE = 'propultech_webpayplusmall';
+    public const PRODUCT_NAME = 'webpay_plus_mall';
 
     /**
      * Payment code.

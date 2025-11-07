@@ -2,13 +2,13 @@
     "name": "propultech/magento2-webpay-plus-mall-rest",
     "description": "Webpay Plus Mall integration for Magento 2",
     "type": "magento2-module",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": [
         "OSL-3.0",
         "AFL-3.0"
     ],
     "require": {
-        "php": "^7.4.0 || ^8.1.0",
+        "php": "^8.1.0 || ^8.2.0 || ^8.3.0",
         "magento/framework": "^103.0.0",
         "transbank/transbank-sdk": "~2.0",
         "transbank/webpay-magento2-rest": "^2.3",

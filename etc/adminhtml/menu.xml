@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add module="Propultech_WebpayPlusMallRest" id="Propultech_WebpayPlusMallRest::propultech_webpay_plus_mall"
+             action="adminhtml/system_config/edit/section/payment" parent="Linets::linets_menu" title="Webpay Plus Mall"
+             resource="Magento_Backend::content" sortOrder="10"/>
+        <add id="Propultech_WebpayPlusMallRest::root" title="Webpay Plus Mall" translate="title"
+             module="Propultech_WebpayPlusMallRest" sortOrder="90" parent="Magento_Sales::sales"
+             resource="Propultech_WebpayPlusMallRest::root"/>
+        <add id="Propultech_WebpayPlusMallRest::transactions" title="Transactions" translate="title"
+             module="Propultech_WebpayPlusMallRest" sortOrder="10" parent="Propultech_WebpayPlusMallRest::root"
+             action="propultech_webpayplusmall/transactions/index" resource="Propultech_WebpayPlusMallRest::transactions"/>
+    </menu>
+</config>

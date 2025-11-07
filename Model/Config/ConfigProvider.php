@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Propultech\WebpayPlusMallRest\Model\Config;
 
@@ -15,8 +16,9 @@ class ConfigProvider implements ConfigProviderInterface
      */
     public function __construct(
         protected ScopeConfigInterface $scopeConfig,
-        protected UrlInterface $urlBuilder
-    ) {
+        protected UrlInterface         $urlBuilder
+    )
+    {
     }
 
     /**
@@ -43,7 +45,7 @@ class ConfigProvider implements ConfigProviderInterface
     {
         return $this->scopeConfig->getValue(
             'payment/propultech_webpayplusmall/title',
-            ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_WEBSITES
         );
     }
 
@@ -55,9 +57,9 @@ class ConfigProvider implements ConfigProviderInterface
     public function getPluginConfig()
     {
         return [
-            'ENVIRONMENT' => $this->scopeConfig->getValue('payment/propultech_webpayplusmall/environment', ScopeInterface::SCOPE_STORE),
-            'COMMERCE_CODE' => $this->scopeConfig->getValue('payment/propultech_webpayplusmall/commerce_code', ScopeInterface::SCOPE_STORE),
-            'API_KEY' => $this->scopeConfig->getValue('payment/propultech_webpayplusmall/api_key', ScopeInterface::SCOPE_STORE),
+            'ENVIRONMENT' => $this->scopeConfig->getValue('payment/propultech_webpayplusmall/environment', ScopeInterface::SCOPE_WEBSITES),
+            'COMMERCE_CODE' => $this->scopeConfig->getValue('payment/propultech_webpayplusmall/commerce_code', ScopeInterface::SCOPE_WEBSITES),
+            'API_KEY' => $this->scopeConfig->getValue('payment/propultech_webpayplusmall/api_key', ScopeInterface::SCOPE_WEBSITES),
             'URL_RETURN' => 'propultech_webpayplusmall/transaction/commit',
         ];
     }
@@ -71,7 +73,7 @@ class ConfigProvider implements ConfigProviderInterface
     {
         $commerceCodesJson = $this->scopeConfig->getValue(
             'payment/propultech_webpayplusmall/commerce_codes',
-            ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_WEBSITES
         );
 
         $commerceCodes = json_decode($commerceCodesJson, true);
@@ -92,7 +94,7 @@ class ConfigProvider implements ConfigProviderInterface
     {
         return $this->scopeConfig->getValue(
             'payment/propultech_webpayplusmall/payment_successful_status',
-            ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_WEBSITES
         );
     }
 
@@ -105,7 +107,7 @@ class ConfigProvider implements ConfigProviderInterface
     {
         return $this->scopeConfig->getValue(
             'payment/propultech_webpayplusmall/payment_error_status',
-            ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_WEBSITES
         );
     }
 
@@ -118,7 +120,7 @@ class ConfigProvider implements ConfigProviderInterface
     {
         return $this->scopeConfig->getValue(
             'payment/propultech_webpayplusmall/new_order_status',
-            ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_WEBSITES
         );
     }
 
@@ -131,7 +133,7 @@ class ConfigProvider implements ConfigProviderInterface
     {
         return $this->scopeConfig->getValue(
             'payment/propultech_webpayplusmall/new_email_order',
-            ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_WEBSITES
         );
     }
 
@@ -144,7 +146,19 @@ class ConfigProvider implements ConfigProviderInterface
     {
         return $this->scopeConfig->getValue(
             'payment/propultech_webpayplusmall/invoice_settings',
-            ScopeInterface::SCOPE_STORE
+            ScopeInterface::SCOPE_WEBSITES
         );
+    }
+
+    /**
+     * Get shipping commerce code to which shipping must be allocated
+     */
+    public function getShippingCommerceCode(): string
+    {
+        $code = (string)$this->scopeConfig->getValue(
+            'payment/propultech_webpayplusmall/shipping_commerce_code',
+            ScopeInterface::SCOPE_WEBSITES
+        );
+        return trim($code);
     }
 }
